@@ -35,17 +35,20 @@ This template enforces:
 - **Animations**: [Framer Motion](https://www.framer.com/motion/) for fluid, declarative animations.
 - **Data Visualization**: [Recharts](https://recharts.org/) for beautiful, responsive charts.
 - **Icons**: [Lucide React](https://lucide.dev/) for crisp, consistent SVG icons.
-- **Developer Experience**: Fully configured with TypeScript, strict Feature-Isolation ESLint boundaries, and Prettier.
+- **Developer Experience**: Fully configured with TypeScript, strict Feature-Isolation ESLint boundaries (`eslint.config.mjs`), and Prettier.
+- **Runtime Safety**: [Zod](https://zod.dev/) for API contract validation at the feature boundary — backend drift throws immediately.
+- **RBAC**: Role-based access control via pure engine in `shared/auth/` consumed via `usePermissions()` and `<Can>` component.
 
 ## 🧠 Architecture
 
 This project follows a Pure TanStack architecture:
 
 - **Next.js** → routing + rendering
-- **TanStack Query** → server state management
-- **Native fetch** → HTTP layer
+- **TanStack Query** → server state management (`useSafeQuery` / `useSafeMutation`)
+- **Native fetch** → HTTP layer (`shared/lib/http.ts`)
 - **Zustand** → UI state only
-- **Feature-based folder structure** → scalability
+- **Zod** → API contract enforcement at feature boundary
+- **Feature-based architecture is enforced across the entire codebase with strict import boundaries.**
 
 ### 🌍 Environment Assumption
 
@@ -54,27 +57,49 @@ This frontend assumes:
 - JWT or token-based auth (optional)
 - REST or GraphQL compatible endpoints
 
-### 🔄 Data Flow
+### 🧠 Data Layer Rules
 
+**Data Flow**:
 UI Component  
 → React Query Hook  
-→ Service Layer (fetch)  
-→ API Server  
+→ Feature API Service (`*.client.ts`)
+→ Shared Fetcher (`http.ts`)
+→ Backend API  
 → Response cached in React Query
 
-### 📏 Architecture Rules
+**State Rules**:
+- **Server State**: React Query is the single source of truth for server state caching and synchronization.
+- **UI State**: Zustand is strictly for UI state only.
 
-- React Query handles ALL server state.
-- Zustand is strictly for UI state only.
-- 🔐 **API Rule**: All API communication must go through `features/*/api` or `shared/lib/fetcher`. No direct fetch calls in components.
-- No duplicated fetching logic.
+**API Rules**:
+- 🔐 **Data Fetching**: All API communication must go through `features/*/api/*.client.ts` or `shared/lib/http`. No direct fetch calls in components.
+- **API Contract Assumption**: All API responses are external contracts and must be treated as unstable unless typed explicitly in each feature.
+
+**Error Handling Rules**:
+- **Error Model**: All API errors are normalized by `http.ts` into a typed `ApiError` with an `ErrorCategory`. Routed globally via `error-router.ts`. Components never inspect raw status codes.
+- **Error Pipeline**: `http.ts → ApiError → error-router → [toast | logout | form | retry]`
+- **Retry Policy**: React Query retries are policy-driven via `shared/errors/retry-policy.ts`, not hardcoded.
+- **Form Errors**: `VALIDATION` (422) errors bypass the global toast and are mapped to form fields via `mapApiValidationToForm`.
 
 ### 🚧 Architecture Boundaries
 
-- **Feature Isolation**: Features cannot import from other features directly. **Enforced via ESLint (`no-restricted-imports`)**.
-- Shared layer is the only cross-feature dependency.
-- App layer can only import features or shared.
-- **Import Strategy**: Use absolute imports only (`@/app`, `@/features`, `@/shared`). Avoid relative imports beyond 1 level.
+- **Feature Isolation**: Feature-to-feature imports are forbidden. Only `app/` can compose multiple features. **Enforced via ESLint + `npm run validate` (AST scanner).**
+- **Shared Kernel Constraint**: `shared/` must never import from `features/` or `app/`. It is strictly deterministic infrastructure.
+- **App Layer Constraint**: `app/` cannot import `@tanstack/react-query` directly. It must consume hooks from `features/`.
+- **Import Strategy**: Use absolute imports only (`@/app`, `@/features`, `@/shared`). Relative imports beyond 1 level are forbidden.
+- **Types / Contracts**: Each feature owns its own `contracts/` (Zod schemas) and `types.ts`. Shared types are only for cross-domain primitives.
+
+### 🧩 System Primitives (FAOS)
+
+Our architecture provides deterministic, non-runtime system primitives:
+- **RBAC**: `shared/auth/rbac.ts` (pure engine) + `usePermissions()` + `<Can permission="...">` component.
+- **Feature Flags**: `shared/flags/` with a swappable `FlagEngine` adapter (`useFeatureFlag()`).
+- **Pagination**: URL-safe `usePagination()` bound to `useSearchParams` — page state lives in the URL, never in Zustand.
+- **Error Kernel**: `shared/errors/` — `ApiError` → `error-router` → `retry-policy` → `map-validation` → `use-error-telemetry`.
+- **Query Wrappers**: `useSafeQuery` / `useSafeMutation` in `shared/query/` — apply retry policy and error routing automatically.
+- **Zod Contracts**: Each feature's `contracts/` folder holds Zod schemas. API responses are parsed at the `*.client.ts` boundary.
+- **Feature Manifests**: `feature.manifest.ts` per feature — CI-only static declarations of dependencies and public surface.
+- **Architecture Validator**: `npm run validate` — AST scanner that blocks builds on any boundary violation.
 
 ### 🧱 Design Philosophy
 
@@ -128,29 +153,43 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 
 ```text
 src/
-├── app/                  # Next.js routes (thin layer only)
-├── features/             # Domain logic (users, auth, etc.)
-└── shared/               # Reusable system-wide code
-    ├── components/       # Shared UI components
-    ├── hooks/            # Global custom hooks
-    ├── lib/              # Core utilities and providers
-    ├── stores/           # Global UI state
-    └── types/            # Global TypeScript types
-package.json              # Project dependencies and scripts
-tsconfig.json             # TypeScript configuration
+├── app/                     # Next.js routes (thin composer layer only)
+├── features/                # Domain logic — each feature is self-contained
+│   ├── auth/
+│   │   ├── api/             # login.api.ts
+│   │   ├── components/      # Can.tsx (RBAC gate)
+│   │   ├── hooks/           # usePermissions.ts
+│   │   ├── stores/          # auth.store.ts
+│   │   └── feature.manifest.ts  # CI-only dependency declaration
+│   └── users/
+│       ├── api/             # users.client.ts, users.keys.ts
+│       ├── contracts/       # users.contract.ts (Zod schema)
+│       ├── hooks/           # useUsers.ts
+│       └── feature.manifest.ts
+└── shared/                  # Pure infrastructure — no business logic
+    ├── auth/                # RBAC engine (roles, permissions, rbac)
+    ├── errors/              # ApiError, error-router, retry-policy, map-validation
+    ├── flags/               # FlagEngine, useFeatureFlag
+    ├── lib/                 # http.ts, query-provider.tsx
+    ├── pagination/          # usePagination (URL-safe), PaginatedResponse<T>
+    └── query/               # useSafeQuery, useSafeMutation
+tools/
+└── validate-architecture.mjs  # AST boundary enforcer (CI-only)
+package.json
+eslint.config.mjs            # Flat-config boundary rules
+tsconfig.json
 ```
-*(Note: If you are not using a `src/` directory, simply use the root level for these folders.)*
 
 ## 🛠️ Scripts
 
-- `pnpm dev`: Starts the local development server.
-- `pnpm build`: Builds the application for production.
-- `pnpm start`: Starts the production server.
-- `pnpm lint`: Runs ESLint to check for code issues.
-- `pnpm format`: Formats code using Prettier.
-- `pnpm type-check`: Runs TypeScript compiler checks without emitting files.
-- `pnpm clean`: Cleans the `.next` and `out` build directories.
-- `pnpm analyze`: Runs a bundle analyzer on build.
+- `npm run dev` / `pnpm dev`: Starts the local development server.
+- `npm run build`: Builds the application for production.
+- `npm run start`: Starts the production server.
+- `npm run lint`: ESLint — checks feature isolation, shared purity, and app layer rules.
+- `npm run type-check`: TypeScript compiler check (no emit).
+- `npm run validate`: **FAOS Architecture Validator** — AST scan for boundary violations, manifest graph check. Run in CI before build.
+- `npm run format`: Formats code using Prettier.
+- `npm run clean`: Cleans the `.next` and `out` build directories.
 
 ## 🌐 Deployment
 

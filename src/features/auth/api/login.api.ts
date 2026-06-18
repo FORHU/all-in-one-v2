@@ -1,4 +1,4 @@
-import { fetcher } from "@/shared/lib/fetcher";
+import { fetcher } from "@/shared/lib/http";
 
 export const login = async (credentials: Record<string, string>) => {
   return fetcher<{ token: string }>("/api/auth/login", {

@@ -1,54 +1,141 @@
-# API Error Taxonomy & Handling Guide
+# API Error Kernel Guide (FAOS v4)
 
-In a SaaS-grade frontend architecture, error handling cannot be an afterthought. It must be a predictable, typed, and globally enforced system. This guide defines how we treat API errors as contracts.
+In a SaaS-grade frontend, error handling is not an afterthought — it is a deterministic pipeline. Every error flows through exactly one path:
 
-## 1. The Error Contract
+```
+HTTP Response → http.ts normalization → ApiError (kernel) → Error Router → UI Strategy
+```
 
-The frontend assumes that the backend will always return errors in a standardized JSON format. We do not try to parse random HTML or raw strings.
+This guide defines the contract, the kernel, and the rules.
 
-### The Expected Payload
-All failed API responses (e.g., `400`, `401`, `403`, `404`, `500`) must return a JSON payload matching this interface:
+---
+
+## 1. Error Contract (Backend Shape)
+
+The backend must always return errors in this standardized JSON format. The frontend does not parse raw strings or HTML error pages.
 
 ```typescript
-// src/shared/types/api.types.ts
-export interface ApiErrorResponse {
-  message: string;          // Human-readable message to display to the user
-  code?: string;            // Machine-readable error code (e.g., "AUTH_001")
-  details?: Record<string, string[]>; // Field-specific validation errors
+// Expected error payload from backend:
+{
+  message: string;              // Human-readable description
+  code?: string;                // Machine-readable code (e.g., "VALIDATION_001")
+  details?: Record<string, string[]>; // Field-level validation errors (422 only)
 }
 ```
 
-## 2. The Interception Layer (Fetcher)
+> **Rule**: If the backend does not follow this contract, it is a backend bug.
 
-Components **should never** have to check `if (!res.ok)`. This is handled at the lowest level in `src/shared/lib/fetcher.ts`.
+---
 
-The `fetcher` automatically intercepts any non-2xx response, attempts to parse the `ApiErrorResponse` payload, and throws a standardized JavaScript `Error` containing the exact backend message.
+## 2. HTTP Layer (`http.ts` — Normalization Kernel)
+
+`src/shared/lib/http.ts` is the single source of truth for all API failures. It:
+
+1. Attempts to parse the JSON error payload.
+2. **Classifies** the error into an `ErrorCategory`.
+3. **Throws** a strongly typed `ApiError` — never a raw string.
 
 ```typescript
-// How fetcher.ts throws errors:
-if (!res.ok) {
-  const errorData = await res.json().catch(() => null);
-  throw new Error(errorData?.message || "An unexpected network error occurred.");
+// src/shared/errors/api-error.ts
+export type ErrorCategory =
+  | "AUTH"
+  | "FORBIDDEN"
+  | "VALIDATION"
+  | "NOT_FOUND"
+  | "NETWORK"
+  | "SERVER"
+  | "UNKNOWN";
+
+export class ApiError extends Error {
+  category: ErrorCategory;
+  status?: number;
+  code?: string;
+  details?: Record<string, string[]>;
 }
 ```
 
-## 3. Global vs. Local Error Handling
+**Classification table** (applied inside `http.ts`):
 
-We separate errors into two categories: **Global Fatal Errors** and **Local Recoverable Errors**.
+| HTTP Status | Category       |
+| ----------- | -------------- |
+| 401         | `AUTH`         |
+| 403         | `FORBIDDEN`    |
+| 404         | `NOT_FOUND`    |
+| 422         | `VALIDATION`   |
+| 5xx         | `SERVER`       |
+| Network err | `NETWORK`      |
+| Other       | `UNKNOWN`      |
 
-### A. Global Handling (Toasts)
-By default, the React Query `QueryCache` and `MutationCache` (configured in `query-provider.tsx`) catch all thrown fetch errors and automatically trigger a global `sonner` toast. 
+> **Rule**: No component or hook ever reads `res.status` directly. Classification happens once, in `http.ts`.
 
-**Rule**: You do not need to add `try/catch` or `.catch()` to your UI components just to show a basic error toast. The system handles it globally.
+---
 
-### B. Local Handling (UI States)
-Sometimes, you need to show an error state directly inside the UI layout (e.g., a "Retry" button or inline text). 
+## 3. System Layer (Router + React Query Cache)
 
-**Rule**: Use React Query's `error` state. Do not use early returns if it breaks the layout; prefer displaying the error inside the component's designated boundary.
+### Error Router (`src/shared/errors/error-router.ts`)
+
+`routeError(error)` converts a classified `ApiError` into a **UI strategy decision**:
+
+```typescript
+switch (error.category) {
+  case "AUTH":       → toast "Session expired" + dispatch logout event
+  case "FORBIDDEN":  → toast "Access denied" + no further action
+  case "VALIDATION": → no toast (form layer handles it)
+  case "NETWORK":    → toast "Network connection issue" (retryable)
+  default:           → toast error.message + log
+}
+```
+
+### Retry Policy (`src/shared/errors/retry-policy.ts`)
+
+React Query retries only when the error category permits it:
+
+```typescript
+// query-provider.tsx
+retry: (count, error) => count < getRetryCount(error)
+
+// getRetryCount:
+NETWORK  → 3 retries
+SERVER   → 2 retries
+429      → 1 retry
+AUTH/FORBIDDEN/VALIDATION → 0 retries
+```
+
+> **Rule**: React Query must never blindly retry. Retry decisions are owned by the retry policy engine.
+
+### Telemetry (`src/shared/errors/use-error-telemetry.ts`)
+
+`logError(error)` fires on every `ApiError` inside the React Query cache callbacks. This is the integration point for Sentry, Datadog, or OpenTelemetry.
+
+```typescript
+logError(error); // → console.log in dev, analytics in prod
+```
+
+---
+
+## 4. UI Layer (Forms + Components)
+
+### Form Validation (422 Errors)
+
+`VALIDATION` errors bypass the global toast system entirely. The `mapApiValidationToForm` adapter maps structured field errors to your form library.
+
+```typescript
+// src/shared/errors/map-validation.ts
+const fields = mapApiValidationToForm(error);
+
+Object.entries(fields).forEach(([key, messages]) => {
+  setError(key, { message: messages[0] });
+});
+```
+
+> **Rule**: No mutation handler may directly read `error.details` — it must use `mapApiValidationToForm`.
+
+### Component Error States
+
+Use React Query's `error` state for inline UI recovery. Never add component-level `try/catch` for display logic.
 
 ```tsx
-// Correct Local Error Handling
-const { data, isLoading, error } = useUsers();
+const { data, error } = useUsers();
 
 if (error) {
   return (
@@ -60,23 +147,22 @@ if (error) {
 }
 ```
 
-## 4. Form Validation Errors (422 Unprocessable Entity)
+### RBAC Gating (403 Errors)
 
-When submitting forms (e.g., login, registration), the backend might return field-specific validation errors inside the `details` object.
+The `<Can>` component prevents rendering privileged UI before a request is even made. A `FORBIDDEN` response at the API layer is a backup guard — not the primary mechanism.
 
-**Handling Flow**:
-1. Disable global toasts for this specific mutation if you want to handle it manually inline.
-2. In your React Query `onError` callback, parse the `details` object.
-3. Pass the field errors down to your form library (e.g., `react-hook-form`).
-
-## 5. Security & Auth Errors (401 / 403)
-
-- **401 Unauthorized**: Means the token is missing or invalid. The global error handler or a route guard will catch this, clear the `auth.store.ts` session, and redirect the user to the `/login` page.
-- **403 Forbidden**: Means the user lacks RBAC permissions. The UI should gracefully downgrade, hiding elements the user cannot access, or display a dedicated "Access Denied" page.
+```tsx
+<Can permission="posts:create">
+  <CreatePostButton />
+</Can>
+```
 
 ---
 
-### 🚨 Golden Rules of Error Handling
-1. **Never hide errors**: If an API fails, the user must know. Let the global toast handle it by default.
-2. **Never parse raw responses in UI**: All parsing belongs in `fetcher.ts`.
-3. **Trust the contract**: The frontend displays what the backend says. If the error message is unhelpful, it is a backend bug, not a frontend problem.
+## 🚨 Golden Rules
+
+1. **One normalization point**: All errors are classified inside `http.ts`. Nowhere else.
+2. **One routing point**: All system-level decisions (toast, logout, retry) flow through `routeError`.
+3. **No UI coupling**: Components never inspect `error.status` or `error.category` directly.
+4. **Form errors bypass global**: `VALIDATION` category never triggers a toast.
+5. **Retry is policy-driven**: React Query retries only when `getRetryCount` permits it.

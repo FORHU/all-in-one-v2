@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { getUsers } from "../api/users.api";
+import { useSafeQuery } from "@/shared/query/useSafeQuery";
+import { getUsers } from "../api/users.client";
+import { usersKeys } from "../api/users.keys";
 
 export function useUsers() {
-  return useQuery({
-    queryKey: ["users"],
+  return useSafeQuery({
+    queryKey: usersKeys.lists(),
     queryFn: getUsers,
   });
 }

@@ -9,6 +9,9 @@ import {
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
 import { toast } from "sonner";
+import { routeError } from "@/shared/errors/error-router";
+import { getRetryCount } from "@/shared/errors/retry-policy";
+import { logError } from "@/shared/errors/use-error-telemetry";
 
 export default function QueryProvider({
   children,
@@ -20,18 +23,34 @@ export default function QueryProvider({
       new QueryClient({
         queryCache: new QueryCache({
           onError: (error) => {
-            toast.error(error.message || "An unexpected error occurred");
+            logError(error);
+            const result = routeError(error);
+
+            if (result.toast) {
+              toast.error(result.toast);
+            }
+
+            if (result.action === "logout") {
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+              }
+            }
           },
         }),
         mutationCache: new MutationCache({
           onError: (error) => {
-            toast.error(error.message || "An unexpected error occurred");
+            logError(error);
+            const result = routeError(error);
+
+            if (result.toast) {
+              toast.error(result.toast);
+            }
           },
         }),
         defaultOptions: {
           queries: {
             staleTime: 1000 * 60,
-            retry: 1,
+            retry: (count, error) => count < getRetryCount(error),
           },
         },
       })

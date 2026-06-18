@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
+    "validate": "node tools/validate-architecture.mjs",
     "format": "prettier --write .",
     "clean": "rimraf .next out",
     "analyze": "ANALYZE=true next build"
@@ -27,6 +28,7 @@
     "recharts": "^3.8.0",
     "sonner": "^1.7.1",
     "tailwind-merge": "^3.5.0",
+    "zod": "^4.4.3",
     "zustand": "^5.0.11"
   },
   "devDependencies": {

@@ -23,37 +23,59 @@ src/features/posts/
 └── types.ts         # TypeScript interfaces
 ```
 
-## Step 2: Define Your Types
+## Step 2: Define Your Contract (Zod Schema)
 
-Always start by defining what your data looks like in `src/features/posts/types.ts`:
+Always start by defining what your data looks like — **using a Zod schema, not a plain interface**. Types are derived from the schema, making them runtime-safe.
+
+Create `src/features/posts/contracts/posts.contract.ts`:
 
 ```typescript
-export interface Post {
-  id: string;
-  title: string;
-  content: string;
-}
+import { z } from "zod";
+
+export const PostSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  content: z.string(),
+});
+
+export const PostsResponseSchema = z.array(PostSchema);
+
+export type Post = z.infer<typeof PostSchema>;
 ```
+
+> **Why Zod?** TypeScript types are compile-time only. If the backend silently changes the response shape, TypeScript won't catch it at runtime — Zod will.
 
 ## Step 3: Write the API Service
 
-Next, we need a way to fetch the data. We **never** call `fetch` directly in our UI components. Instead, we use the `http` client from the `shared` layer.
+Next, we need a way to fetch the data. We **never** call `fetch` directly in UI components. Instead, we use the `http` client from `shared` and **validate the response against our Zod contract**.
 
 Create `src/features/posts/api/posts.client.ts`:
 
 ```typescript
 import { fetcher } from "@/shared/lib/http";
-import { Post } from "../types";
+import { PostsResponseSchema } from "../contracts/posts.contract";
 
 export const getPosts = async () => {
-  // fetcher automatically handles JSON parsing and throwing errors!
-  return fetcher<Post[]>("/api/posts");
+  const raw = await fetcher<unknown>("/api/posts");
+  return PostsResponseSchema.parse(raw); // throws ZodError if backend drifts
+};
+```
+
+Also create `src/features/posts/api/posts.keys.ts` for the query key factory:
+
+```typescript
+export const postsKeys = {
+  all: ["posts"] as const,
+  lists: () => [...postsKeys.all, "list"] as const,
+  detail: (id: string) => [...postsKeys.all, "detail", id] as const,
+};
+```
 };
 ```
 
 ## Step 4: Create the React Query Hook
 
-React Query handles caching, loading states, and background updates. We wrap our API call in a custom hook.
+React Query handles caching, loading states, and background updates. Use `useSafeQuery` — our drop-in wrapper that applies retry policy automatically.
 
 Create `src/features/posts/hooks/usePosts.ts`:
 
@@ -69,6 +91,8 @@ export function usePosts() {
   });
 }
 ```
+
+> **Rule**: Always use `useSafeQuery` instead of raw `useQuery`. Never hardcode query keys — always use the feature's key factory.
 
 ## Step 5: Build the UI Component
 
@@ -126,14 +150,16 @@ export default function HomePage() {
 
 ## 🎯 Important Rules to Remember
 
-1. **No direct fetching in UI**: Always put your API calls in `features/*/api`.
-2. **Absolute Imports Only**: Always use `@/features/` or `@/shared/`. Never use deep relative paths like `../../shared/components`.
+1. **No direct fetching in UI**: Always put your API calls in `features/*/api/*.client.ts`.
+2. **Absolute Imports Only**: Always use `@/features/` or `@/shared/`. Never use `../../` relative paths crossing layers.
 3. **No Cross-Feature Imports**: `features/posts/` cannot import from `features/users/`. If they need to share something, it belongs in `shared/`.
 4. **Data Ownership**: React Query owns server state. Components must never persist API data into local state unless transforming it for UI purposes.
-5. **Naming Consistency**: API files must follow `*.client.ts`. Hooks must always follow `useX.ts` (camelCase). Components must be `PascalCase`.
-6. **Query Key Ownership**: Each feature owns its own React Query keys via a factory (e.g., `postsKeys.all`). Query keys must always follow the structured factory output to prevent collision.
-7. **Mutation Rule**: All mutations (create/update/delete) must live in `features/*/api` and must NEVER be executed directly inside components except via React Query mutation hooks.
-8. **API Contract Rule**: API responses must never be assumed stable. All responses must be typed at the feature level.
+5. **Naming Consistency**: API files follow `*.client.ts`. Hooks follow `useX.ts`. Components are `PascalCase`. Key factories follow `featureKeys.action()` pattern.
+6. **Query Wrappers**: Always use `useSafeQuery` (not `useQuery`) and `useSafeMutation` (not `useMutation`).
+7. **Query Key Factory**: Each feature owns a `*.keys.ts` file. Never pass raw string arrays as query keys.
+8. **Mutation Rule**: All mutations must live in `features/*/api` and be called via `useSafeMutation` — never directly inside components.
+9. **Zod Contracts**: API responses MUST be validated with a Zod schema in `features/*/contracts/`. Types are derived from schemas, not declared separately.
+10. **Feature Manifest**: Every new feature must include a `feature.manifest.ts` declaring its name, dependencies, and public surface.
 
 ---
 
@@ -149,12 +175,15 @@ Every feature has:
 Everything else is a consequence of these three parts.
 
 ### System Primitives
-On top of features, our Frontend Operating System provides 3 global primitives you can use anywhere:
+The FAOS provides these global primitives — use them everywhere:
 
-| System | Purpose |
-| --- | --- |
-| **RBAC** | Who can do what (e.g., `usePermissions().can("posts:create")`) |
-| **Feature Flags** | What UI exists (e.g., `useFeatureFlag("NEW_DASHBOARD")`) |
-| **Pagination** | How data scales (e.g., `usePagination()`) |
+| Primitive | What it does | How to use |
+| --- | --- | --- |
+| **RBAC** | Who can do what | `<Can permission="posts:create">` or `usePermissions().can()` |
+| **Feature Flags** | What UI exists | `useFeatureFlag("NEW_DASHBOARD")` |
+| **Pagination** | How lists scale | `usePagination()` — state lives in URL, not Zustand |
+| **Error Kernel** | How errors flow | Automatic via `useSafeQuery` / `useSafeMutation` |
+| **Zod Contracts** | API safety net | `Schema.parse(raw)` in every `*.client.ts` |
+| **Architecture Validator** | Build-time guard | `npm run validate` — blocks bad imports in CI |
 
 You are now ready to build! 🚀

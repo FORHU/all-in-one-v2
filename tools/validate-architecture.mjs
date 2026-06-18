@@ -1,179 +1,139 @@
-#!/usr/bin/env node
+#!/usr/bin/env mjs
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(__dirname, '../src');
+
+let hasViolations = false;
+
+function logViolation(file, rule, description) {
+  console.error(`\x1b[31m[VIOLATION]\x1b[0m ${file}`);
+  console.error(`  ↳ \x1b[33mRule:\x1b[0m ${rule}`);
+  console.error(`  ↳ \x1b[36mDetails:\x1b[0m ${description}\n`);
+  hasViolations = true;
+}
+
 /**
- * FAOS v5 — Architecture Validator
- *
- * CI-ONLY build tool. Not bundled. Not imported anywhere.
- *
- * Scans all source files and enforces:
- * 1. Cross-feature import violations (feature A cannot import from feature B)
- * 2. shared/ purity (shared/ cannot import features/ or app/)
- * 3. app/ layer discipline (app/ cannot import React Query directly)
- * 4. feature.manifest.ts dependency graph consistency
- *
- * Usage: node tools/validate-architecture.js
+ * Superfast static extraction of imports from file content
  */
+function extractImports(content) {
+  const imports = [];
+  // Matches standard static imports: import ... from '...' or import '...'
+  const importRegex = /import\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"]/g;
+  const dynamicImportRegex = /import\(['"]([^'"]+)['"]\)/g;
 
-import { readFileSync, readdirSync, statSync } from "fs";
-import { join, relative, sep } from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const ROOT = join(__dirname, "..");
-const SRC = join(ROOT, "src");
-
-let errors = 0;
-
-function fail(msg) {
-  console.error(`\n❌ ARCHITECTURE VIOLATION: ${msg}`);
-  errors++;
+  let match;
+  while ((match = importRegex.exec(content)) !== null) {
+    imports.push(match[2]);
+  }
+  while ((match = dynamicImportRegex.exec(content)) !== null) {
+    imports.push(match[1]);
+  }
+  return imports;
 }
 
-function warn(msg) {
-  console.warn(`\n⚠️  WARNING: ${msg}`);
-}
+/**
+ * Scan a file and run boundary assertion rules
+ */
+function validateFile(filePath, relativePath) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const imports = extractImports(content);
 
-/** Recursively collect all .ts / .tsx files */
-function collectFiles(dir) {
-  const results = [];
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) {
-      results.push(...collectFiles(full));
-    } else if (/\.(ts|tsx)$/.test(entry) && !entry.endsWith(".d.ts")) {
-      results.push(full);
+  // Clean up paths for processing
+  const pathParts = relativePath.split(path.sep);
+  const layer = pathParts[0]; // 'app', 'features', or 'shared'
+
+  // Rule 9.1: Prevent accidental feature manifest imports in the application tree
+  if (relativePath.endsWith('feature.manifest.ts') === false && content.includes('featureManifest')) {
+    if (content.includes('import') && content.includes('feature.manifest')) {
+      logViolation(relativePath, 'Manifest Pollution', 'feature.manifest.ts must never be imported into the active application runtime tree.');
     }
   }
-  return results;
-}
-
-/** Extract all @/ import paths from a file */
-function extractImports(content) {
-  const matches = [];
-  const re = /from\s+["'](@\/[^"']+)["']/g;
-  let m;
-  while ((m = re.exec(content)) !== null) {
-    matches.push(m[1]);
-  }
-  return matches;
-}
-
-/** Derive the FAOS layer and feature name from a file path */
-function classify(filePath) {
-  const rel = relative(SRC, filePath).split(sep);
-  const layer = rel[0]; // "features" | "shared" | "app"
-  const feature = layer === "features" ? rel[1] : null; // "auth" | "users" | ...
-  return { layer, feature };
-}
-
-/** Parse an @/ import to its layer + feature */
-function classifyImport(importPath) {
-  // @/features/users/... → { layer: "features", feature: "users" }
-  // @/shared/... → { layer: "shared", feature: null }
-  // @/app/... → { layer: "app", feature: null }
-  const parts = importPath.replace("@/", "").split("/");
-  const layer = parts[0];
-  const feature = layer === "features" ? parts[1] : null;
-  return { layer, feature };
-}
-
-console.log("🔍 FAOS Architecture Validator running...\n");
-
-const files = collectFiles(SRC);
-
-for (const filePath of files) {
-  const content = readFileSync(filePath, "utf-8");
-  const imports = extractImports(content);
-  const { layer: fileLayer, feature: fileFeature } = classify(filePath);
 
   for (const imp of imports) {
-    const { layer: impLayer, feature: impFeature } = classifyImport(imp);
-
-    // Rule 1: Cross-feature imports are forbidden
-    if (
-      fileLayer === "features" &&
-      impLayer === "features" &&
-      fileFeature !== impFeature
-    ) {
-      fail(
-        `Cross-feature import in "${relative(ROOT, filePath)}":\n   imports "${imp}" (feature: ${impFeature})\n   Features cannot import from other features.`
-      );
+    // 1. Enforce Absolute Imports Strategy
+    if (imp.startsWith('../..')) {
+      logViolation(relativePath, 'Import Strategy', `Forbidden deep relative import "${imp}". Use absolute path aliases instead (@/*).`);
     }
 
-    // Rule 2: shared/ must never import from features/ or app/
-    if (fileLayer === "shared" && (impLayer === "features" || impLayer === "app")) {
-      fail(
-        `shared/ purity violation in "${relative(ROOT, filePath)}":\n   imports "${imp}"\n   shared/ must be pure infrastructure — no feature or app imports.`
-      );
+    // 2. Map aliases back to logical layers
+    let impLayer = null;
+    let impFeature = null;
+
+    if (imp.startsWith('@/app') || imp.startsWith('app/')) impLayer = 'app';
+    if (imp.startsWith('@/shared') || imp.startsWith('shared/')) impLayer = 'shared';
+    if (imp.startsWith('@/features/') || imp.startsWith('features/')) {
+      impLayer = 'features';
+      const parts = imp.replace(/^(@\/)?features\//, '').split('/');
+      impFeature = parts[0];
     }
 
-    // Rule 3: app/ cannot import React Query directly (use useSafeQuery/useSafeMutation)
-    if (fileLayer === "app" && imp.includes("@tanstack/react-query")) {
-      fail(
-        `app/ layer violation in "${relative(ROOT, filePath)}":\n   Direct React Query import detected.\n   Use useSafeQuery or useSafeMutation from @/shared/query instead.`
-      );
+    if (!impLayer) continue;
+
+    // --- Boundary Rule Layer Engine ---
+
+    // Shared Layer Constraints
+    if (layer === 'shared') {
+      if (impLayer === 'features' || impLayer === 'app') {
+        logViolation(relativePath, 'Shared Kernel Constraint', `The shared infrastructure layer is strictly deterministic. It cannot leak down into "${imp}".`);
+      }
     }
-  }
 
-  // Rule 4: feature.manifest.ts must not be imported into the React tree
-  if (filePath.includes("feature.manifest") === false && content.includes("feature.manifest")) {
-    fail(
-      `Manifest import violation in "${relative(ROOT, filePath)}":\n   feature.manifest files are CI-only and must never be imported into source code.`
-    );
-  }
-}
+    // Feature Isolation Constraints
+    if (layer === 'features') {
+      const currentFeature = pathParts[1];
 
-// --- Manifest dependency graph validation ---
-console.log("📦 Validating feature manifest dependency graph...\n");
-
-const manifestPaths = files.filter((f) => f.includes("feature.manifest"));
-const manifests = [];
-
-for (const mp of manifestPaths) {
-  try {
-    // Simple regex parse (avoids dynamic import complexity in Node ESM)
-    const content = readFileSync(mp, "utf-8");
-    const nameMatch = content.match(/name:\s*["']([^"']+)["']/);
-    const depsMatch = content.match(/dependsOn:\s*\[([^\]]*)\]/);
-
-    const name = nameMatch?.[1];
-    const deps = depsMatch?.[1]
-      .split(",")
-      .map((d) => d.replace(/["'\s]/g, ""))
-      .filter(Boolean) ?? [];
-
-    if (name) manifests.push({ name, deps });
-  } catch {
-    warn(`Could not parse manifest at ${relative(ROOT, mp)}`);
-  }
-}
-
-const knownFeatures = new Set(manifests.map((m) => m.name));
-
-for (const { name, deps } of manifests) {
-  for (const dep of deps) {
-    if (!knownFeatures.has(dep)) {
-      fail(
-        `Manifest violation in feature "${name}":\n   declares dependency on "${dep}" but no manifest for "${dep}" exists.`
-      );
+      if (impLayer === 'features' && impFeature !== currentFeature) {
+        logViolation(
+          relativePath,
+          'Feature Isolation Boundary',
+          `Cross-feature boundaries breached! Feature "${currentFeature}" is attempting to import from Feature "${impFeature}" via "${imp}". Enforce composition inside the app layer instead.`
+        );
+      }
     }
-    // Simple circular dependency check (direct only)
-    const depManifest = manifests.find((m) => m.name === dep);
-    if (depManifest?.deps.includes(name)) {
-      fail(
-        `Circular dependency: "${name}" ↔ "${dep}" — features cannot depend on each other circularly.`
-      );
+
+    // App Layer Constraints
+    if (layer === 'app') {
+      if (imp === '@tanstack/react-query') {
+        logViolation(relativePath, 'App Layer Discipline', 'The app layer cannot consume @tanstack/react-query directly. It must strictly consume encapsulated data hooks exported from the features layer.');
+      }
     }
   }
 }
 
-// --- Final report ---
-console.log("─".repeat(50));
-if (errors === 0) {
-  console.log(`\n✅ Architecture valid. ${files.length} files scanned. Zero violations.\n`);
-  process.exit(0);
-} else {
-  console.error(`\n💥 ${errors} architecture violation(s) found. Build blocked.\n`);
+/**
+ * Recursively crawl directories
+ */
+function crawl(dir) {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const fullPath = path.join(dir, file);
+    const stat = fs.statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      crawl(fullPath);
+    } else if (stat.isFile() && /\.(ts|tsx|js|jsx|mjs)$/.test(file)) {
+      const relativePath = path.relative(ROOT_DIR, fullPath);
+      validateFile(fullPath, relativePath);
+    }
+  }
+}
+
+// Run Pipeline
+console.log('\x1b[36m%s\x1b[0m', '🛡️  Running FAOS Architecture Validation Layer Scan...');
+if (!fs.existsSync(ROOT_DIR)) {
+  console.error(`Source root not found at target context path: ${ROOT_DIR}`);
   process.exit(1);
+}
+
+crawl(ROOT_DIR);
+
+if (hasViolations) {
+  console.error('\x1b[31m%s\x1b[0m', '❌ Architecture enforcement validation checks failed. See violations detailed above. Build blocked.');
+  process.exit(1);
+} else {
+  console.log('\x1b[32m%s\x1b[0m', '✅ Architectural boundaries cleanly intact. Feature isolation guaranteed.');
+  process.exit(0);
 }

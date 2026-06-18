@@ -14,7 +14,7 @@
     <img src="https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright" alt="Playwright" />
     <img src="https://img.shields.io/badge/ESLint-8.x-4B32C3?style=flat-square&logo=eslint" alt="ESLint" />
     <img src="https://img.shields.io/badge/Prettier-3.5-F7B93E?style=flat-square&logo=prettier" alt="Prettier" />
-    <img src="https://img.shields.io/github/actions/workflow/status/your-org/next-tailwind-template/ci.yml?style=flat-square&label=CI&logo=github-actions" alt="CI Status" />
+    <img src="https://img.shields.io/github/actions/workflow/status/rmValdez/next-template-v1/ci.yml?style=flat-square&label=CI&logo=github-actions" alt="CI Status" />
   </div>
 </div>
 
@@ -111,7 +111,7 @@ Most Next.js projects start unstructured and grow into technical debt. This temp
 ```bash
 # 1. Clone the repo
 git clone <your-repo-url>
-cd next-tailwind-template
+cd next-template-v1
 
 # 2. Install dependencies (also initializes Husky git hooks)
 pnpm install

@@ -28,10 +28,10 @@ git --version     # git version 2.x.x
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/next-tailwind-template.git
+git clone https://github.com/rmValdez/next-template-v1.git
 
 # Enter the project directory
-cd next-tailwind-template
+cd next-template-v1
 ```
 
 ---

@@ -75,6 +75,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ESLint flat config with FAOS boundary enforcement.
 - Prettier, `rimraf`, TypeScript strict mode.
 
-[Unreleased]: https://github.com/your-org/next-tailwind-template/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/your-org/next-tailwind-template/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/your-org/next-tailwind-template/releases/tag/v1.0.0
+[Unreleased]: https://github.com/rmValdez/next-template-v1/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/rmValdez/next-template-v1/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/rmValdez/next-template-v1/releases/tag/v1.0.0

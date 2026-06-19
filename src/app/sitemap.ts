@@ -1,7 +1,6 @@
 export default function sitemap() {
   const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://www.next-tailwind-template.app";
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.next-template-v1.app";
 
   return [
     {

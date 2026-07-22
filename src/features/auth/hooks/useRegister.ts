@@ -10,6 +10,7 @@ export function useRegister() {
   const router = useRouter();
 
   return useSafeMutation({
+    meta: { skipAuthLogout: true },
     mutationFn: (input: RegisterInput) => register(input),
     onSuccess: () => {
       notify.success("Account created successfully. Please sign in.");

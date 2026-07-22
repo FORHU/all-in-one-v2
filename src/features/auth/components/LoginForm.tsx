@@ -4,35 +4,34 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, Shield } from "lucide-react";
-import { useAuthStore } from "../stores/auth.store";
+import { useLogin } from "../hooks/useLogin";
+import { LoginInputSchema } from "../contracts/auth.contract";
+import { notify } from "@/shared/lib/notify";
 
-/**
- * UI-only login form. No backend call yet — sets a local demo session
- * and navigates to /dashboard.
- */
 export function LoginForm() {
   const router = useRouter();
-  const setToken = useAuthStore((s) => s.setToken);
-  const setUser = useAuthStore((s) => s.setUser);
-  const setRole = useAuthStore((s) => s.setRole);
+  const loginMutation = useLogin();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isSubmitting = loginMutation.isPending;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) return;
 
-    setIsSubmitting(true);
+    const parsed = LoginInputSchema.safeParse({
+      email: email.trim(),
+      password,
+    });
 
-    // Demo session only — replace with real login API later
-    setToken("demo-token");
-    setUser({ id: "demo-user" });
-    setRole("admin");
+    if (!parsed.success) {
+      notify.error(parsed.error.issues[0]?.message ?? "Invalid form data.");
+      return;
+    }
 
-    router.push("/dashboard");
+    loginMutation.mutate(parsed.data);
   };
 
   return (

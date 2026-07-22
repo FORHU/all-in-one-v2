@@ -31,3 +31,29 @@ export const RegisterResponseSchema = z.object({
 
 export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
 export type RegisterResult = z.infer<typeof RegisterResultSchema>;
+
+/** Body for POST /api/v1/auth/login */
+export const LoginInputSchema = z.object({
+  email: z.string().email("Enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export type LoginInput = z.infer<typeof LoginInputSchema>;
+
+export const LoginUserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  username: z.string(),
+  name: z.string().nullable().optional(),
+  role: z.enum(["USER", "ADMIN"]),
+  avatar: z.string().nullable().optional(),
+  onboardingStatus: z.boolean().optional(),
+});
+
+export const LoginResultSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+  user: LoginUserSchema,
+});
+
+export type LoginResult = z.infer<typeof LoginResultSchema>;

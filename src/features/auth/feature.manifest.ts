@@ -11,6 +11,7 @@ export const featureManifest = {
     "Can",
     "usePermissions",
     "useAuthStore",
+    "useLogin",
     "LoginForm",
     "RegisterForm",
   ] as const,

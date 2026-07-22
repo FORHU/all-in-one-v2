@@ -38,15 +38,16 @@ export default function QueryProvider({
           },
         }),
         mutationCache: new MutationCache({
-          onError: (error) => {
+          onError: (error, _variables, _context, mutation) => {
             logError(error);
             const result = routeError(error);
+            const skipAuthLogout = mutation.meta?.skipAuthLogout === true;
 
             if (result.toast) {
               notify.error(result.toast);
             }
 
-            if (result.action === "logout") {
+            if (result.action === "logout" && !skipAuthLogout) {
               if (typeof window !== "undefined") {
                 window.dispatchEvent(new CustomEvent("auth:unauthorized"));
               }

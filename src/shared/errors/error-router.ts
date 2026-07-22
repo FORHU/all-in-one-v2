@@ -11,7 +11,7 @@ export function routeError(error: unknown) {
   switch (error.category) {
     case "AUTH":
       return {
-        toast: "Session expired",
+        toast: error.message || "Session expired",
         action: "logout",
       };
 

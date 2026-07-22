@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSafeMutation } from "@/shared/query/useSafeMutation";
+import { notify } from "@/shared/lib/notify";
 import { login } from "../api/auth.client";
 import { useAuthStore } from "../stores/auth.store";
 import type { LoginInput } from "../contracts/auth.contract";
@@ -11,35 +13,29 @@ function mapApiRole(apiRole: "USER" | "ADMIN"): Role {
   return apiRole === "ADMIN" ? "admin" : "viewer";
 }
 
-export function useAuth() {
-  const setToken = useAuthStore((state) => state.setToken);
-  const setUser = useAuthStore((state) => state.setUser);
-  const setRole = useAuthStore((state) => state.setRole);
+export function useLogin() {
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const setToken = useAuthStore((s) => s.setToken);
+  const setUser = useAuthStore((s) => s.setUser);
+  const setRole = useAuthStore((s) => s.setRole);
 
-  const loginMutation = useSafeMutation({
-    mutationFn: (input: LoginInput) => login(input),
+  return useSafeMutation({
+    meta: { skipAuthLogout: true },
+    mutationFn: async (input: LoginInput) => {
+      // Clear any previous session before signing in as a different user
+      setToken(null);
+      setUser(null);
+      setRole("viewer");
+      return login(input);
+    },
     onSuccess: (data) => {
       setToken(data.accessToken);
       setUser({ id: data.user.id });
       setRole(mapApiRole(data.user.role));
       queryClient.invalidateQueries();
+      notify.success("Signed in successfully.");
+      router.push("/dashboard");
     },
   });
-
-  const clearSession = () => {
-    setToken(null);
-    setUser(null);
-    setRole("viewer");
-    queryClient.clear();
-  };
-
-  return {
-    login: loginMutation.mutateAsync,
-    logout: async () => {
-      clearSession();
-    },
-    isLoggingIn: loginMutation.isPending,
-    isLoggingOut: false,
-  };
 }

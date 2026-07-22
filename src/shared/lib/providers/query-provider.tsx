@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notify";
 import { routeError } from "@/shared/errors/error-router";
 import { getRetryCount } from "@/shared/errors/retry-policy";
 import { logError } from "@/shared/errors/use-error-telemetry";
@@ -27,7 +27,7 @@ export default function QueryProvider({
             const result = routeError(error);
 
             if (result.toast) {
-              toast.error(result.toast);
+              notify.error(result.toast);
             }
 
             if (result.action === "logout") {
@@ -43,7 +43,7 @@ export default function QueryProvider({
             const result = routeError(error);
 
             if (result.toast) {
-              toast.error(result.toast);
+              notify.error(result.toast);
             }
 
             if (result.action === "logout") {

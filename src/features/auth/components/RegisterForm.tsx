@@ -4,11 +4,10 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, UserPlus } from "lucide-react";
+import { useRegister } from "../hooks/useRegister";
+import { RegisterInputSchema } from "../contracts/auth.contract";
+import { notify } from "@/shared/lib/notify";
 
-/**
- * UI-only registration form. Fields match all-in-one-api POST /api/v1/auth/register:
- * email, username, password (min 6). No backend call yet.
- */
 export function RegisterForm() {
   const router = useRouter();
 
@@ -18,29 +17,29 @@ export function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const registerMutation = useRegister();
+  const isSubmitting = registerMutation.isPending;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-
-    if (!email.trim() || !username.trim() || !password.trim()) return;
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      notify.error("Passwords do not match.");
       return;
     }
 
-    setIsSubmitting(true);
+    const parsed = RegisterInputSchema.safeParse({
+      email: email.trim(),
+      username: username.trim(),
+      password,
+    });
 
-    // Demo only — replace with real register API later
-    router.push("/");
+    if (!parsed.success) {
+      notify.error(parsed.error.issues[0]?.message ?? "Invalid form data.");
+      return;
+    }
+
+    registerMutation.mutate(parsed.data);
   };
 
   const inputClassName =
@@ -165,12 +164,6 @@ export function RegisterForm() {
               </button>
             </div>
           </div>
-
-          {error && (
-            <p className="text-sm font-medium text-red-600" role="alert">
-              {error}
-            </p>
-          )}
 
           <button
             type="submit"

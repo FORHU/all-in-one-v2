@@ -7,7 +7,7 @@
 export const featureManifest = {
   name: "auth",
   dependsOn: [] as const,
-  exposes: ["Can", "usePermissions", "useAuthStore"] as const,
+  exposes: ["Can", "usePermissions", "useAuthStore", "LoginForm"] as const,
 } as const;
 
 export type AuthManifest = typeof featureManifest;

@@ -15,7 +15,7 @@ export function AuthListener() {
       // Clear token and query cache on 401
       setToken(null);
       queryClient.clear();
-      router.push("/login");
+      router.push("/");
     };
 
     window.addEventListener("auth:unauthorized", handleUnauthorized);

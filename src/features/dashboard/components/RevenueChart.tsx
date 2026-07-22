@@ -21,10 +21,12 @@ function formatCurrency(value: number) {
 
 export function RevenueChart({ data }: RevenueChartProps) {
   return (
-    <div className="p-6 rounded-2xl glass-light border border-white/5">
+    <div className="rounded-lg border border-[#e5e7eb] bg-white p-6">
       <div className="mb-6">
-        <h3 className="text-lg font-bold">Revenue vs Expenses</h3>
-        <p className="text-sm text-text-tertiary mt-1">Last 6 months</p>
+        <h3 className="text-lg font-semibold text-[#111827]">
+          Revenue vs Expenses
+        </h3>
+        <p className="mt-1 text-sm text-[#6b7280]">Last 6 months</p>
       </div>
 
       <ResponsiveContainer width="100%" height={240}>
@@ -34,8 +36,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
         >
           <defs>
             <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+              <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="expensesGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2} />
@@ -43,30 +45,27 @@ export function RevenueChart({ data }: RevenueChartProps) {
             </linearGradient>
           </defs>
 
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="rgba(255,255,255,0.05)"
-          />
+          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
 
           <XAxis
             dataKey="month"
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 12 }}
+            tick={{ fill: "#9ca3af", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             tickFormatter={formatCurrency}
-            tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 12 }}
+            tick={{ fill: "#9ca3af", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
           />
 
           <Tooltip
             contentStyle={{
-              background: "rgba(15,15,20,0.9)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "12px",
-              color: "#fff",
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "8px",
+              color: "#111827",
               fontSize: "13px",
             }}
             formatter={(value) => [formatCurrency(Number(value))]}
@@ -76,11 +75,11 @@ export function RevenueChart({ data }: RevenueChartProps) {
             type="monotone"
             dataKey="revenue"
             name="Revenue"
-            stroke="#7c3aed"
+            stroke="#2563eb"
             strokeWidth={2}
             fill="url(#revenueGradient)"
             dot={false}
-            activeDot={{ r: 4, fill: "#7c3aed" }}
+            activeDot={{ r: 4, fill: "#2563eb" }}
           />
           <Area
             type="monotone"

@@ -7,7 +7,12 @@
 export const featureManifest = {
   name: "dashboard",
   dependsOn: [] as const,
-  exposes: ["StatsCard", "RevenueChart", "useDashboardStats"] as const,
+  exposes: [
+    "StatsCard",
+    "RevenueChart",
+    "useDashboardStats",
+    "DashboardPanel",
+  ] as const,
 } as const;
 
 export type DashboardManifest = typeof featureManifest;

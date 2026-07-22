@@ -24,10 +24,9 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: {
     template: "%s | Boilerplate 2026",
-    default: "Boilerplate 2026 | Premium Next.js Starter",
+    default: "Admin Central | Sign in",
   },
-  description:
-    "Experience the next generation of development with Boilerplate 2026. A premium high-performance ecosystem.",
+  description: "Secure E-commerce Management Suite — sign in to Admin Central.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || "https://boilerplate-2026.vercel.app",
   ),

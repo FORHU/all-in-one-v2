@@ -1,0 +1,21 @@
+.shop-theme {
+  --shop-bg: #f7f5f2;
+  --shop-bg-soft: #ece8e2;
+  --shop-surface: #ffffff;
+  --shop-ink: #1b1730;
+  --shop-ink-soft: #2a2440;
+  --shop-text: #1b1730;
+  --shop-text-muted: #635c70;
+  --shop-accent: #ff3d6e;
+  --shop-accent-dark: #e0295a;
+  --shop-band: #1b1730;
+  --shop-band-text: #f7f5f2;
+  --shop-band-text-muted: rgba(247, 245, 242, 0.6);
+  --shop-border: rgba(27, 23, 48, 0.12);
+
+  font-family: var(--font-shop-body);
+}
+
+.shop-display {
+  font-family: var(--font-shop-display);
+}

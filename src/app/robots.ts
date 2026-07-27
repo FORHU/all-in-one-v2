@@ -8,7 +8,20 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/dashboard/", "/api/"], // Protect private routes from crawling
+      disallow: [
+        "/dashboard/",
+        "/api/",
+        "/products/",
+        "/orders/",
+        "/customers/",
+        "/suppliers/",
+        "/reports/",
+        "/settings/",
+        "/tools/",
+        "/marketing/",
+        "/activity-logs/",
+        "/integrations/",
+      ], // Protect private admin routes from crawling
     },
     sitemap: `${baseUrl}/sitemap.xml`,
   };

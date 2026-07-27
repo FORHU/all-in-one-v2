@@ -4,7 +4,7 @@ export default function sitemap() {
 
   return [
     {
-      url: baseUrl,
+      url: `${baseUrl}/shop`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,

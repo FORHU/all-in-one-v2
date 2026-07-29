@@ -10,13 +10,15 @@ export function PagePlaceholder({
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight text-[#111827]">
+        <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
           {title}
         </h2>
-        <p className="mt-1 text-sm text-[#6b7280]">{description}</p>
+        <p className="mt-1 text-sm text-[var(--shop-text-muted)]">
+          {description}
+        </p>
       </div>
-      <div className="rounded-lg border border-dashed border-[#d1d5db] bg-white px-6 py-16 text-center">
-        <p className="text-sm font-medium text-[#9ca3af]">
+      <div className="rounded-lg border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] px-6 py-16 text-center">
+        <p className="text-sm font-medium text-[var(--shop-text-muted)]">
           {title} content coming soon
         </p>
       </div>

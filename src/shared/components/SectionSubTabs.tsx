@@ -12,7 +12,7 @@ export function SectionSubTabs({ items }: SectionSubTabsProps) {
   const pathname = usePathname();
 
   return (
-    <div className="border-b border-[#e5e7eb] bg-white">
+    <div className="border-b border-[var(--shop-border)] bg-[var(--shop-surface)]">
       <nav
         className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 lg:px-6"
         aria-label="Section tabs"
@@ -25,10 +25,10 @@ export function SectionSubTabs({ items }: SectionSubTabsProps) {
               key={item.href}
               href={item.href}
               className={[
-                "whitespace-nowrap border-b-2 px-3 py-3.5 text-sm font-medium transition",
+                "whitespace-nowrap border-b-2 px-3 py-3.5 text-sm font-semibold uppercase tracking-wide transition",
                 isActive
-                  ? "border-[#2563eb] text-[#2563eb]"
-                  : "border-transparent text-[#6b7280] hover:border-[#d1d5db] hover:text-[#111827]",
+                  ? "border-[var(--shop-accent)] text-[var(--shop-text)]"
+                  : "border-transparent text-[var(--shop-text-muted)] hover:border-[var(--shop-border)] hover:text-[var(--shop-text)]",
               ].join(" ")}
             >
               {item.label}

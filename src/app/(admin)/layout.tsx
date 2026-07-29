@@ -1,8 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@/shared/components/AppShell";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
+import { ADMIN_NAV_ITEMS } from "@/shared/navigation/nav-items";
+
+function getPageTitle(pathname: string): string | undefined {
+  for (const item of ADMIN_NAV_ITEMS) {
+    const child = item.children?.find((c) => c.href === pathname);
+    if (child) return child.label;
+    if (item.href === pathname) return item.label;
+  }
+  return undefined;
+}
 
 export default function AdminLayout({
   children,
@@ -10,6 +20,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const setToken = useAuthStore((s) => s.setToken);
   const setUser = useAuthStore((s) => s.setUser);
 
@@ -19,5 +30,9 @@ export default function AdminLayout({
     router.push("/");
   };
 
-  return <AppShell onLogout={handleLogout}>{children}</AppShell>;
+  return (
+    <AppShell onLogout={handleLogout} title={getPageTitle(pathname)}>
+      {children}
+    </AppShell>
+  );
 }

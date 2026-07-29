@@ -1,0 +1,41 @@
+/*
+ * App-wide theme, ported from the shop theme in feat/stores-ui
+ * (src/app/shop/shop-theme.css). Applied via .shop-theme on <body> in
+ * layout.tsx so every page shares one palette/typography system instead of
+ * each component hardcoding its own hex values.
+ */
+.shop-theme {
+  --shop-bg: #f7f5f2;
+  --shop-bg-soft: #ece8e2;
+  --shop-surface: #ffffff;
+  --shop-ink: #1b1730;
+  --shop-ink-soft: #2a2440;
+  --shop-text: #1b1730;
+  --shop-text-muted: #635c70;
+  --shop-accent: #ff3d6e;
+  --shop-accent-dark: #e0295a;
+  --shop-band: #1b1730;
+  --shop-band-text: #f7f5f2;
+  --shop-band-text-muted: rgba(247, 245, 242, 0.6);
+  --shop-border: rgba(27, 23, 48, 0.12);
+
+  /* Semantic status colors — used for anything conveying state
+     (product status badges, stock levels, trend deltas), so they
+     move together if the palette ever changes. */
+  --shop-success: #1a7f4e;
+  --shop-success-bg: #e9f7ef;
+  --shop-warning: #b7791f;
+  --shop-warning-bg: #fbf1de;
+  --shop-danger: #e0295a;
+  --shop-danger-bg: #fdecee;
+  --shop-neutral: #8a7a55;
+  --shop-neutral-bg: #f2eee6;
+
+  background: var(--shop-bg-soft);
+  color: var(--shop-text);
+  font-family: var(--font-shop-body);
+}
+
+.shop-display {
+  font-family: var(--font-shop-display);
+}

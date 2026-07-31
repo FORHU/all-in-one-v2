@@ -18,7 +18,7 @@ export function AppShell({ children, title, onLogout }: AppShellProps) {
       <AppSidebar onLogout={onLogout} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 lg:px-6">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 lg:hidden">
           <button
             type="button"
             onClick={toggleSidebar}

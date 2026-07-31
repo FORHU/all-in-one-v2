@@ -1,12 +1,39 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, UserPlus } from "lucide-react";
 import { useRegister } from "../hooks/useRegister";
 import { RegisterInputSchema } from "../contracts/auth.contract";
 import { notify } from "@/shared/lib/notify";
+
+type PasswordStrength = {
+  score: 0 | 1 | 2 | 3 | 4;
+  label: string;
+  color: string;
+};
+
+function getPasswordStrength(password: string): PasswordStrength {
+  const criteria = [
+    password.length >= 8,
+    /[a-z]/.test(password) && /[A-Z]/.test(password),
+    /\d/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ];
+  const score = criteria.filter(Boolean).length as PasswordStrength["score"];
+
+  const byScore: Record<PasswordStrength["score"], [string, string]> = {
+    0: ["Weak", "var(--shop-danger)"],
+    1: ["Weak", "var(--shop-danger)"],
+    2: ["Fair", "var(--shop-warning)"],
+    3: ["Good", "var(--shop-neutral)"],
+    4: ["Strong", "var(--shop-success)"],
+  };
+  const [label, color] = byScore[score];
+
+  return { score, label, color };
+}
 
 export function RegisterForm() {
   const router = useRouter();
@@ -19,6 +46,7 @@ export function RegisterForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const registerMutation = useRegister();
   const isSubmitting = registerMutation.isPending;
+  const strength = useMemo(() => getPasswordStrength(password), [password]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -133,6 +161,30 @@ export function RegisterForm() {
               )}
             </button>
           </div>
+          {password.length > 0 && (
+            <div className="mt-2.5" aria-live="polite">
+              <div className="flex gap-1.5">
+                {[0, 1, 2, 3].map((i) => (
+                  <span
+                    key={i}
+                    className="h-1 flex-1 rounded-full transition-colors"
+                    style={{
+                      backgroundColor:
+                        i < strength.score
+                          ? strength.color
+                          : "var(--shop-border)",
+                    }}
+                  />
+                ))}
+              </div>
+              <p
+                className="mt-1.5 text-xs font-medium"
+                style={{ color: strength.color }}
+              >
+                {strength.label} password
+              </p>
+            </div>
+          )}
         </div>
 
         <div>

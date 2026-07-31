@@ -19,17 +19,17 @@ export function StatsCard({ stat, index }: StatsCardProps) {
 
   const trendColor =
     stat.trend === "up"
-      ? "text-emerald-700"
+      ? "var(--shop-success)"
       : stat.trend === "down"
-        ? "text-[var(--shop-accent-dark)]"
-        : "text-[var(--shop-text-muted)]";
+        ? "var(--shop-accent-dark)"
+        : "var(--shop-text-muted)";
 
   const trendBg =
     stat.trend === "up"
-      ? "bg-emerald-50"
+      ? "var(--shop-success-bg)"
       : stat.trend === "down"
-        ? "bg-[var(--shop-accent)]/10"
-        : "bg-[var(--shop-bg-soft)]";
+        ? "color-mix(in srgb, var(--shop-accent) 10%, transparent)"
+        : "var(--shop-bg-soft)";
 
   return (
     <motion.div
@@ -43,7 +43,8 @@ export function StatsCard({ stat, index }: StatsCardProps) {
           {stat.label}
         </p>
         <span
-          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${trendBg} ${trendColor}`}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold"
+          style={{ backgroundColor: trendBg, color: trendColor }}
         >
           <TrendIcon className="h-3 w-3" />
           {Math.abs(stat.change)}%

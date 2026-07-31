@@ -6,11 +6,12 @@ import { useSafeMutation } from "@/shared/query/useSafeMutation";
 import { notify } from "@/shared/lib/notify";
 import { login } from "../api/auth.client";
 import { useAuthStore } from "../stores/auth.store";
+import { setRefreshToken } from "@/shared/lib/token";
 import type { LoginInput } from "../contracts/auth.contract";
 import type { Role } from "@/shared/auth/roles";
 
-function mapApiRole(apiRole: "USER" | "ADMIN"): Role {
-  return apiRole === "ADMIN" ? "admin" : "viewer";
+function mapApiRole(apiRole: "USER" | "ADMIN" | "SUPER_ADMIN"): Role {
+  return apiRole === "ADMIN" || apiRole === "SUPER_ADMIN" ? "admin" : "viewer";
 }
 
 export function useLogin() {
@@ -31,6 +32,7 @@ export function useLogin() {
     },
     onSuccess: (data) => {
       setToken(data.accessToken);
+      setRefreshToken(data.refreshToken);
       setUser({ id: data.user.id });
       setRole(mapApiRole(data.user.role));
       queryClient.invalidateQueries();

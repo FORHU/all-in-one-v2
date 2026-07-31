@@ -7,8 +7,8 @@ import { useAuthStore } from "../stores/auth.store";
 import type { LoginInput } from "../contracts/auth.contract";
 import type { Role } from "@/shared/auth/roles";
 
-function mapApiRole(apiRole: "USER" | "ADMIN"): Role {
-  return apiRole === "ADMIN" ? "admin" : "viewer";
+function mapApiRole(apiRole: "USER" | "ADMIN" | "SUPER_ADMIN"): Role {
+  return apiRole === "ADMIN" || apiRole === "SUPER_ADMIN" ? "admin" : "viewer";
 }
 
 export function useAuth() {

@@ -1,45 +1,37 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
-import { useSafeMutation } from "@/shared/query/useSafeMutation";
-import { login } from "../api/auth.client";
+import { useEffect } from "react";
+import { useSafeQuery } from "@/shared/query/useSafeQuery";
+import { getMe } from "../api/auth.client";
+import { authKeys } from "../api/auth.keys";
 import { useAuthStore } from "../stores/auth.store";
-import type { LoginInput } from "../contracts/auth.contract";
-import type { Role } from "@/shared/auth/roles";
+import { mapApiRole } from "../lib/mapApiRole";
 
-function mapApiRole(apiRole: "USER" | "ADMIN"): Role {
-  return apiRole === "ADMIN" ? "admin" : "viewer";
-}
+/**
+ * Fetches the logged-in user's profile. Disabled while there's no token,
+ * so it doesn't fire (and 401) on public pages like the login screen.
+ *
+ * Also rehydrates the RBAC `role` in auth.store — that store only holds
+ * `role` in memory (unlike `token`, which persists in localStorage), so
+ * without this a page refresh would otherwise silently drop an ADMIN/
+ * SUPER_ADMIN/DEVELOPER session back to "viewer" permissions.
+ */
+export function useMe() {
+  const token = useAuthStore((s) => s.token);
+  const setRole = useAuthStore((s) => s.setRole);
 
-export function useAuth() {
-  const setToken = useAuthStore((state) => state.setToken);
-  const setUser = useAuthStore((state) => state.setUser);
-  const setRole = useAuthStore((state) => state.setRole);
-  const queryClient = useQueryClient();
-
-  const loginMutation = useSafeMutation({
-    mutationFn: (input: LoginInput) => login(input),
-    onSuccess: (data) => {
-      setToken(data.accessToken);
-      setUser({ id: data.user.id });
-      setRole(mapApiRole(data.user.role));
-      queryClient.invalidateQueries();
-    },
+  const query = useSafeQuery({
+    queryKey: authKeys.me(),
+    queryFn: getMe,
+    enabled: Boolean(token),
+    staleTime: 5 * 60 * 1000,
   });
 
-  const clearSession = () => {
-    setToken(null);
-    setUser(null);
-    setRole("viewer");
-    queryClient.clear();
-  };
+  useEffect(() => {
+    if (query.data) {
+      setRole(mapApiRole(query.data.role));
+    }
+  }, [query.data, setRole]);
 
-  return {
-    login: loginMutation.mutateAsync,
-    logout: async () => {
-      clearSession();
-    },
-    isLoggingIn: loginMutation.isPending,
-    isLoggingOut: false,
-  };
+  return query;
 }

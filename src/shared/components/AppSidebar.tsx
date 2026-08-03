@@ -7,20 +7,37 @@ import { ChevronDown, LogOut, Shield, X } from "lucide-react";
 import { ADMIN_NAV_ITEMS } from "@/shared/navigation/nav-items";
 import { useUIStore } from "@/shared/stores/ui.store";
 
+// shared/ is pure infrastructure and may not import from features/ — the
+// caller (AdminLayout) fetches the profile and passes it down as data.
+export type SidebarUser = {
+  name: string | null;
+  username: string;
+  email: string;
+};
+
 type AppSidebarProps = {
   onLogout: () => void;
+  me?: SidebarUser;
+  isMeLoading?: boolean;
 };
 
 function isNavItemActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AppSidebar({ onLogout }: AppSidebarProps) {
+export function AppSidebar({ onLogout, me, isMeLoading }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // `token` (and therefore the caller's profile query) is only known after
+  // mount — the server always renders as logged-out, since localStorage
+  // doesn't exist there. Gating on `mounted` keeps the first client render
+  // identical to the server's, avoiding a hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     setExpanded((prev) => {
@@ -187,6 +204,23 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
         </nav>
 
         <div className="border-t border-white/10 p-3">
+          {mounted && isMeLoading ? (
+            <div className="mb-1 h-11 animate-pulse rounded-md bg-white/5" />
+          ) : mounted && me ? (
+            <div className="mb-1 flex items-center gap-3 rounded-md px-3 py-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold uppercase text-[var(--shop-band-text)]">
+                {(me.name ?? me.username).charAt(0)}
+              </div>
+              <div className="min-w-0 leading-tight">
+                <p className="truncate text-sm font-medium text-[var(--shop-band-text)]">
+                  {me.name ?? me.username}
+                </p>
+                <p className="truncate text-[11px] text-[var(--shop-band-text-muted)]">
+                  {me.email}
+                </p>
+              </div>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={onLogout}

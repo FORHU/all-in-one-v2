@@ -44,9 +44,15 @@ export function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const registerMutation = useRegister();
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const registerMutation = useRegister({ onValidationError: setFieldErrors });
   const isSubmitting = registerMutation.isPending;
   const strength = useMemo(() => getPasswordStrength(password), [password]);
+
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field])
+      setFieldErrors((prev) => ({ ...prev, [field]: [] }));
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -67,11 +73,22 @@ export function RegisterForm() {
       return;
     }
 
+    setFieldErrors({});
     registerMutation.mutate(parsed.data);
   };
 
   const inputClassName =
     "w-full rounded-md border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3.5 py-2.5 text-sm text-[var(--shop-text)] outline-none transition placeholder:text-[var(--shop-text-muted)] focus:border-[var(--shop-accent)] focus:ring-2 focus:ring-[var(--shop-accent)]/20";
+
+  const errorInputClassName =
+    "w-full rounded-md border border-[var(--shop-danger)] bg-[var(--shop-surface)] px-3.5 py-2.5 text-sm text-[var(--shop-text)] outline-none transition placeholder:text-[var(--shop-text-muted)] focus:ring-2 focus:ring-[var(--shop-accent)]/20";
+
+  const fieldErrorText = (field: string) =>
+    fieldErrors[field]?.[0] ? (
+      <p className="mt-1.5 text-xs font-medium text-[var(--shop-danger)]">
+        {fieldErrors[field][0]}
+      </p>
+    ) : null;
 
   const labelClassName =
     "mb-2 block text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]";
@@ -110,10 +127,17 @@ export function RegisterForm() {
             autoComplete="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              clearFieldError("email");
+            }}
             placeholder="name@company.com"
-            className={inputClassName}
+            aria-invalid={Boolean(fieldErrors.email?.length)}
+            className={
+              fieldErrors.email?.length ? errorInputClassName : inputClassName
+            }
           />
+          {fieldErrorText("email")}
         </div>
 
         <div>
@@ -126,10 +150,19 @@ export function RegisterForm() {
             autoComplete="username"
             required
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              clearFieldError("username");
+            }}
             placeholder="jdoe"
-            className={inputClassName}
+            aria-invalid={Boolean(fieldErrors.username?.length)}
+            className={
+              fieldErrors.username?.length
+                ? errorInputClassName
+                : inputClassName
+            }
           />
+          {fieldErrorText("username")}
         </div>
 
         <div>
@@ -144,9 +177,13 @@ export function RegisterForm() {
               required
               minLength={6}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearFieldError("password");
+              }}
               placeholder="At least 6 characters"
-              className={`${inputClassName} pr-11`}
+              aria-invalid={Boolean(fieldErrors.password?.length)}
+              className={`${fieldErrors.password?.length ? errorInputClassName : inputClassName} pr-11`}
             />
             <button
               type="button"
@@ -185,6 +222,7 @@ export function RegisterForm() {
               </p>
             </div>
           )}
+          {fieldErrorText("password")}
         </div>
 
         <div>

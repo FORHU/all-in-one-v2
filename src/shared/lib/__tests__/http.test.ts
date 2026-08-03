@@ -100,6 +100,28 @@ describe("fetcher", () => {
     expect(error.details).toEqual({ email: ["is invalid"] });
   });
 
+  it("throws ApiError with VALIDATION category on 400", async () => {
+    mockFetch(400, {
+      message: "Bad request",
+      details: { email: ["is required"] },
+    });
+    const error: any = await fetcher("/api/form").catch((e) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.category).toBe("VALIDATION");
+    expect(error.details).toEqual({ email: ["is required"] });
+  });
+
+  it("throws ApiError with VALIDATION category on 409", async () => {
+    mockFetch(409, {
+      message: "Conflict",
+      details: { email: ["already registered"] },
+    });
+    const error: any = await fetcher("/api/auth/register").catch((e) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.category).toBe("VALIDATION");
+    expect(error.details).toEqual({ email: ["already registered"] });
+  });
+
   it("throws ApiError with SERVER category on 500", async () => {
     mockFetch(500, { message: "Internal Server Error" });
     await expect(fetcher("/api/crash")).rejects.toMatchObject({

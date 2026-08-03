@@ -14,21 +14,23 @@ export function AppShell({ children, title, onLogout }: AppShellProps) {
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
 
   return (
-    <div className="flex min-h-screen bg-[#f3f4f6]">
+    <div className="flex min-h-screen bg-[var(--shop-bg-soft)]">
       <AppSidebar onLogout={onLogout} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-[#e5e7eb] bg-white px-4 lg:px-6">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 lg:hidden">
           <button
             type="button"
             onClick={toggleSidebar}
-            className="rounded-md p-2 text-[#4b5563] hover:bg-[#f3f4f6] lg:hidden"
+            className="rounded-md p-2 text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)] lg:hidden"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </button>
           {title ? (
-            <h1 className="text-base font-semibold text-[#111827]">{title}</h1>
+            <h1 className="shop-display text-base font-semibold uppercase tracking-wide text-[var(--shop-text)]">
+              {title}
+            </h1>
           ) : null}
         </header>
 

@@ -19,38 +19,43 @@ export function StatsCard({ stat, index }: StatsCardProps) {
 
   const trendColor =
     stat.trend === "up"
-      ? "text-emerald-600"
+      ? "var(--shop-success)"
       : stat.trend === "down"
-        ? "text-red-600"
-        : "text-zinc-500";
+        ? "var(--shop-accent-dark)"
+        : "var(--shop-text-muted)";
 
   const trendBg =
     stat.trend === "up"
-      ? "bg-emerald-50"
+      ? "var(--shop-success-bg)"
       : stat.trend === "down"
-        ? "bg-red-50"
-        : "bg-zinc-100";
+        ? "color-mix(in srgb, var(--shop-accent) 10%, transparent)"
+        : "var(--shop-bg-soft)";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08 }}
-      className="group rounded-lg border border-[#e5e7eb] bg-white p-6 transition-all hover:border-[#d1d5db] hover:shadow-sm"
+      className="group rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] p-6 transition-all hover:shadow-sm"
     >
       <div className="mb-4 flex items-start justify-between">
-        <p className="text-sm font-medium text-[#6b7280]">{stat.label}</p>
+        <p className="text-sm font-medium text-[var(--shop-text-muted)]">
+          {stat.label}
+        </p>
         <span
-          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${trendBg} ${trendColor}`}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold"
+          style={{ backgroundColor: trendBg, color: trendColor }}
         >
           <TrendIcon className="h-3 w-3" />
           {Math.abs(stat.change)}%
         </span>
       </div>
-      <p className="text-3xl font-bold tracking-tight text-[#111827]">
+      <p className="shop-display text-3xl font-bold tracking-tight text-[var(--shop-text)]">
         {stat.value}
       </p>
-      <p className="mt-2 text-xs text-[#9ca3af]">vs. previous period</p>
+      <p className="mt-2 text-xs text-[var(--shop-text-muted)]">
+        vs. previous period
+      </p>
     </motion.div>
   );
 }

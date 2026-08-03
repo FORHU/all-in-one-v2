@@ -51,18 +51,23 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
 
       <aside
         className={[
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[#e5e7eb] bg-white transition-transform duration-200 lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-[var(--shop-ink)] transition-transform duration-200 lg:static lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
       >
-        <div className="flex h-16 items-center justify-between border-b border-[#e5e7eb] px-5">
+        <div className="flex h-16 items-center justify-between border-b border-white/10 px-5">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2563eb]">
-              <Shield className="h-4 w-4 text-white" strokeWidth={2.25} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--shop-accent)]">
+              <Shield
+                className="h-4 w-4 text-[var(--shop-ink)]"
+                strokeWidth={2.25}
+              />
             </div>
             <div className="leading-tight">
-              <p className="text-sm font-bold text-[#111827]">Admin Central</p>
-              <p className="text-[10px] font-medium text-[#9ca3af]">
+              <p className="shop-display text-sm font-bold uppercase tracking-wide text-[var(--shop-band-text)]">
+                Admin Central
+              </p>
+              <p className="text-[10px] font-medium text-[var(--shop-band-text-muted)]">
                 Management Suite
               </p>
             </div>
@@ -70,7 +75,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
           <button
             type="button"
             onClick={toggleSidebar}
-            className="rounded-md p-1.5 text-[#6b7280] hover:bg-[#f3f4f6] lg:hidden"
+            className="rounded-md p-1.5 text-[var(--shop-band-text-muted)] hover:bg-white/5 lg:hidden"
             aria-label="Close menu"
           >
             <X className="h-4 w-4" />
@@ -99,17 +104,19 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                         }
                       }}
                       className={[
-                        "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition",
+                        "flex w-full items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition",
                         active
-                          ? "bg-[#eff6ff] text-[#2563eb]"
-                          : "text-[#4b5563] hover:bg-[#f9fafb] hover:text-[#111827]",
+                          ? "border-[var(--shop-accent)] bg-white/5 text-[var(--shop-band-text)]"
+                          : "border-transparent text-[var(--shop-band-text-muted)] hover:bg-white/5 hover:text-[var(--shop-band-text)]",
                       ].join(" ")}
                       aria-expanded={isOpen}
                     >
                       <Icon
                         className={[
                           "h-4 w-4 shrink-0",
-                          active ? "text-[#2563eb]" : "text-[#9ca3af]",
+                          active
+                            ? "text-[var(--shop-accent)]"
+                            : "text-[var(--shop-band-text-muted)]",
                         ].join(" ")}
                       />
                       <span className="min-w-0 flex-1 truncate text-left">
@@ -117,7 +124,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                       </span>
                       <ChevronDown
                         className={[
-                          "h-4 w-4 shrink-0 text-[#9ca3af] transition-transform",
+                          "h-4 w-4 shrink-0 text-[var(--shop-band-text-muted)] transition-transform",
                           isOpen ? "rotate-180" : "",
                         ].join(" ")}
                       />
@@ -129,16 +136,18 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                         if (sidebarOpen) toggleSidebar();
                       }}
                       className={[
-                        "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition",
+                        "flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition",
                         active
-                          ? "bg-[#eff6ff] text-[#2563eb]"
-                          : "text-[#4b5563] hover:bg-[#f9fafb] hover:text-[#111827]",
+                          ? "border-[var(--shop-accent)] bg-white/5 text-[var(--shop-band-text)]"
+                          : "border-transparent text-[var(--shop-band-text-muted)] hover:bg-white/5 hover:text-[var(--shop-band-text)]",
                       ].join(" ")}
                     >
                       <Icon
                         className={[
                           "h-4 w-4 shrink-0",
-                          active ? "text-[#2563eb]" : "text-[#9ca3af]",
+                          active
+                            ? "text-[var(--shop-accent)]"
+                            : "text-[var(--shop-band-text-muted)]",
                         ].join(" ")}
                       />
                       <span className="truncate">{item.label}</span>
@@ -146,7 +155,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                   )}
 
                   {hasChildren && isOpen && (
-                    <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-[#e5e7eb] pl-3">
+                    <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-white/10 pl-3">
                       {item.children!.map((child) => {
                         const childActive = pathname === child.href;
 
@@ -160,8 +169,8 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                               className={[
                                 "block rounded-md px-3 py-2 text-sm transition",
                                 childActive
-                                  ? "font-medium text-[#2563eb]"
-                                  : "text-[#6b7280] hover:bg-[#f9fafb] hover:text-[#111827]",
+                                  ? "font-medium text-[var(--shop-accent)]"
+                                  : "text-[var(--shop-band-text-muted)] hover:bg-white/5 hover:text-[var(--shop-band-text)]",
                               ].join(" ")}
                             >
                               {child.label}
@@ -177,11 +186,11 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
           </ul>
         </nav>
 
-        <div className="border-t border-[#e5e7eb] p-3">
+        <div className="border-t border-white/10 p-3">
           <button
             type="button"
             onClick={onLogout}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-[#4b5563] transition hover:bg-[#fef2f2] hover:text-[#dc2626]"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-[var(--shop-band-text-muted)] transition hover:bg-white/5 hover:text-[var(--shop-accent)]"
           >
             <LogOut className="h-4 w-4" />
             Sign out

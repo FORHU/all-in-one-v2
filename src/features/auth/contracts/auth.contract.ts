@@ -40,12 +40,26 @@ export const LoginInputSchema = z.object({
 
 export type LoginInput = z.infer<typeof LoginInputSchema>;
 
+/**
+ * Single source of truth for the backend's role enum. Login/refresh and
+ * users/me previously declared this independently and drifted (login was
+ * missing DEVELOPER), so DEVELOPER-role accounts passed backend auth but
+ * threw a ZodError on the client. Both schemas below now share this.
+ */
+export const ApiRoleSchema = z.enum([
+  "USER",
+  "ADMIN",
+  "SUPER_ADMIN",
+  "DEVELOPER",
+]);
+export type ApiRole = z.infer<typeof ApiRoleSchema>;
+
 export const LoginUserSchema = z.object({
   id: z.string(),
   email: z.string().email(),
   username: z.string(),
   name: z.string().nullable().optional(),
-  role: z.enum(["USER", "ADMIN", "SUPER_ADMIN"]),
+  role: ApiRoleSchema,
   avatar: z.string().nullable().optional(),
   onboardingStatus: z.boolean().optional(),
   onboardingCompleted: z.boolean().optional(),
@@ -86,7 +100,7 @@ export const AuthMeSchema = z.object({
   email: z.string().email(),
   username: z.string(),
   name: z.string().nullable(),
-  role: z.enum(["USER", "ADMIN", "SUPER_ADMIN", "DEVELOPER"]),
+  role: ApiRoleSchema,
   onboardingCompleted: z.boolean().optional(),
   avatar: z
     .object({ fileUrl: z.string().nullable().optional() })

@@ -25,12 +25,14 @@ export default function AdminLayout({
   const pathname = usePathname();
   const setToken = useAuthStore((s) => s.setToken);
   const setUser = useAuthStore((s) => s.setUser);
+  const setRole = useAuthStore((s) => s.setRole);
   const { data: me, isLoading: isMeLoading } = useMe();
 
   const handleLogout = () => {
     setToken(null);
     clearRefreshToken();
     setUser(null);
+    setRole("viewer");
     router.push("/");
   };
 

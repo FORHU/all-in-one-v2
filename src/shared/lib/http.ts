@@ -22,7 +22,10 @@ function classify(
   if (status === 401) return "AUTH";
   if (status === 403) return "FORBIDDEN";
   if (status === 404) return "NOT_FOUND";
-  if (status === 422) return "VALIDATION";
+  // 400 (malformed input) and 409 (conflict, e.g. duplicate email on
+  // register) both resolve to a per-field message the same way 422 does —
+  // see api-guide.md's Error Code Troubleshooting Matrix.
+  if (status === 400 || status === 409 || status === 422) return "VALIDATION";
   if (status >= 500) return "SERVER";
   return "UNKNOWN";
 }

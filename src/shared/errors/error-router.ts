@@ -21,11 +21,19 @@ export function routeError(error: unknown) {
         action: "none",
       };
 
-    case "VALIDATION":
-      return {
-        toast: null,
-        action: "form",
-      };
+    case "VALIDATION": {
+      // Only suppress the toast when there's an actual field-level message to
+      // show instead — otherwise a VALIDATION error with no `details` (e.g. a
+      // plain "Invalid credentials" 400 on login) would fail completely
+      // silently: no toast here, and no field message either since nothing
+      // triggers onValidationError without details to map.
+      const hasFieldDetails =
+        error.details && Object.keys(error.details).length > 0;
+
+      return hasFieldDetails
+        ? { toast: null, action: "form" }
+        : { toast: error.message, action: "log" };
+    }
 
     case "NETWORK":
       return {

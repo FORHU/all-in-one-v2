@@ -10,7 +10,8 @@ import { notify } from "@/shared/lib/notify";
 
 export function LoginForm() {
   const router = useRouter();
-  const loginMutation = useLogin();
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const loginMutation = useLogin({ onValidationError: setFieldErrors });
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,6 +32,7 @@ export function LoginForm() {
       return;
     }
 
+    setFieldErrors({});
     loginMutation.mutate(parsed.data);
   };
 
@@ -72,10 +74,24 @@ export function LoginForm() {
             autoComplete="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (fieldErrors.email)
+                setFieldErrors((prev) => ({ ...prev, email: [] }));
+            }}
             placeholder="name@company.com"
-            className="w-full rounded-md border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3.5 py-2.5 text-sm text-[var(--shop-text)] outline-none transition placeholder:text-[var(--shop-text-muted)] focus:border-[var(--shop-accent)] focus:ring-2 focus:ring-[var(--shop-accent)]/20"
+            aria-invalid={Boolean(fieldErrors.email?.length)}
+            className={`w-full rounded-md border bg-[var(--shop-surface)] px-3.5 py-2.5 text-sm text-[var(--shop-text)] outline-none transition placeholder:text-[var(--shop-text-muted)] focus:ring-2 focus:ring-[var(--shop-accent)]/20 ${
+              fieldErrors.email?.length
+                ? "border-[var(--shop-danger)]"
+                : "border-[var(--shop-border)] focus:border-[var(--shop-accent)]"
+            }`}
           />
+          {fieldErrors.email?.[0] && (
+            <p className="mt-1.5 text-xs font-medium text-[var(--shop-danger)]">
+              {fieldErrors.email[0]}
+            </p>
+          )}
         </div>
 
         {/* Password */}
@@ -93,9 +109,18 @@ export function LoginForm() {
               autoComplete="current-password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (fieldErrors.password)
+                  setFieldErrors((prev) => ({ ...prev, password: [] }));
+              }}
               placeholder="••••••••"
-              className="w-full rounded-md border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3.5 py-2.5 pr-11 text-sm text-[var(--shop-text)] outline-none transition placeholder:text-[var(--shop-text-muted)] focus:border-[var(--shop-accent)] focus:ring-2 focus:ring-[var(--shop-accent)]/20"
+              aria-invalid={Boolean(fieldErrors.password?.length)}
+              className={`w-full rounded-md border bg-[var(--shop-surface)] px-3.5 py-2.5 pr-11 text-sm text-[var(--shop-text)] outline-none transition placeholder:text-[var(--shop-text-muted)] focus:ring-2 focus:ring-[var(--shop-accent)]/20 ${
+                fieldErrors.password?.length
+                  ? "border-[var(--shop-danger)]"
+                  : "border-[var(--shop-border)] focus:border-[var(--shop-accent)]"
+              }`}
             />
             <button
               type="button"
@@ -110,6 +135,11 @@ export function LoginForm() {
               )}
             </button>
           </div>
+          {fieldErrors.password?.[0] && (
+            <p className="mt-1.5 text-xs font-medium text-[var(--shop-danger)]">
+              {fieldErrors.password[0]}
+            </p>
+          )}
         </div>
 
         {/* Primary CTA */}

@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@/shared/components/AppShell";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
-import { useMe } from "@/features/auth/hooks/useMe";
+import { useMe } from "@/features/auth/hooks/useAuth";
 import { ADMIN_NAV_ITEMS } from "@/shared/navigation/nav-items";
 import { clearRefreshToken } from "@/shared/lib/token";
 

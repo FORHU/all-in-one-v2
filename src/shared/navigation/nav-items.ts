@@ -10,6 +10,8 @@ import {
   Plug,
   Settings,
   ScrollText,
+  Building2,
+  UserCog,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,7 +27,9 @@ export type NavItem = {
   children?: NavChildItem[];
 };
 
-export const ADMIN_NAV_ITEMS: NavItem[] = [
+// Shown while a single store is selected in the sidebar switcher — every
+// item here operates on that one tenant's data.
+export const STORE_NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   {
     label: "Suppliers",
@@ -85,3 +89,18 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Activity Logs", href: "/activity-logs", icon: ScrollText },
 ];
+
+// Shown while "Platform" is selected — super-admin-only, cross-tenant
+// concerns. Store-scoped items (Products, Orders, Customers, ...) don't
+// apply here since there's no single tenant to operate on.
+export const PLATFORM_NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Tenants", href: "/tenants", icon: Building2 },
+  { label: "Staff & Roles", href: "/staff", icon: UserCog },
+  { label: "Activity Logs", href: "/activity-logs", icon: ScrollText },
+  { label: "Settings", href: "/settings", icon: Settings },
+];
+
+export function getNavItems(isPlatformScope: boolean): NavItem[] {
+  return isPlatformScope ? PLATFORM_NAV_ITEMS : STORE_NAV_ITEMS;
+}

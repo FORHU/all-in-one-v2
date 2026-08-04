@@ -1,16 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@/shared/components/AppShell";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 import { useMe } from "@/features/auth/hooks/useAuth";
 import { useTenants } from "@/features/tenants/hooks/useTenants";
 import { useTenantStore } from "@/shared/tenant/tenant.store";
-import { ADMIN_NAV_ITEMS } from "@/shared/navigation/nav-items";
+import { getNavItems } from "@/shared/navigation/nav-items";
 import { clearRefreshToken } from "@/shared/lib/token";
 
-function getPageTitle(pathname: string): string | undefined {
-  for (const item of ADMIN_NAV_ITEMS) {
+function getPageTitle(
+  pathname: string,
+  isPlatformScope: boolean,
+): string | undefined {
+  for (const item of getNavItems(isPlatformScope)) {
     const child = item.children?.find((c) => c.href === pathname);
     if (child) return child.label;
     if (item.href === pathname) return item.label;
@@ -34,6 +38,13 @@ export default function AdminLayout({
   const tenantSlug = useTenantStore((s) => s.tenantSlug);
   const setTenantSlug = useTenantStore((s) => s.setTenantSlug);
 
+  // tenantSlug is localStorage-backed, which the server always sees as
+  // unset — gate on `mounted` so the first client render's title matches
+  // the server's, same pattern AppSidebar uses for the nav itself.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isPlatformScope = !mounted || !tenantSlug;
+
   const handleLogout = () => {
     setToken(null);
     clearRefreshToken();
@@ -45,7 +56,7 @@ export default function AdminLayout({
   return (
     <AppShell
       onLogout={handleLogout}
-      title={getPageTitle(pathname)}
+      title={getPageTitle(pathname, isPlatformScope)}
       me={me}
       isMeLoading={isMeLoading}
       tenants={tenants}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ChevronDown, LogOut, Shield, Store, X } from "lucide-react";
-import { ADMIN_NAV_ITEMS } from "@/shared/navigation/nav-items";
+import { getNavItems } from "@/shared/navigation/nav-items";
 import { useUIStore } from "@/shared/stores/ui.store";
 
 // shared/ is pure infrastructure and may not import from features/ — the
@@ -58,20 +58,43 @@ export function AppSidebar({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // `selectedTenantSlug` reads localStorage, which the server always sees
+  // as unset — before mount, render as Platform scope (the server's view)
+  // so the first client paint matches and avoids a hydration mismatch.
+  const isPlatformScope = !mounted || !selectedTenantSlug;
+  const navItems = getNavItems(isPlatformScope);
+
   useEffect(() => {
     setExpanded((prev) => {
       const next = { ...prev };
-      for (const item of ADMIN_NAV_ITEMS) {
+      for (const item of navItems) {
         if (item.children && isNavItemActive(pathname, item.href)) {
           next[item.href] = true;
         }
       }
       return next;
     });
-  }, [pathname]);
+  }, [pathname, navItems]);
 
   const toggleExpanded = (href: string) => {
     setExpanded((prev) => ({ ...prev, [href]: !prev[href] }));
+  };
+
+  // Switching scope can strand the user on a page that doesn't exist in the
+  // new nav (e.g. Platform's /tenants isn't a store page) — the URL doesn't
+  // change on its own just because the sidebar's item list did. Redirect to
+  // /dashboard, which exists in both scopes, when that happens.
+  const handleTenantChange = (slug: string) => {
+    onTenantChange?.(slug);
+    const nextNavItems = getNavItems(!slug);
+    const stillValid = nextNavItems.some(
+      (item) =>
+        isNavItemActive(pathname, item.href) ||
+        item.children?.some((c) => isNavItemActive(pathname, c.href)),
+    );
+    if (!stillValid) {
+      router.push("/dashboard");
+    }
   };
 
   return (
@@ -126,10 +149,11 @@ export function AppSidebar({
               <Store className="h-3.5 w-3.5 shrink-0 text-[var(--shop-band-text-muted)]" />
               <select
                 value={selectedTenantSlug ?? ""}
-                onChange={(e) => onTenantChange?.(e.target.value)}
+                onChange={(e) => handleTenantChange(e.target.value)}
                 aria-label="Select store"
                 className="w-full truncate bg-transparent text-xs font-medium text-[var(--shop-band-text)] outline-none [&>option]:text-[var(--shop-ink)]"
               >
+                <option value="">Platform (All Stores)</option>
                 {tenants.map((t) => (
                   <option key={t.slug} value={t.slug}>
                     {t.name}
@@ -142,7 +166,7 @@ export function AppSidebar({
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="space-y-0.5">
-            {ADMIN_NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const active = isNavItemActive(pathname, item.href);
               const Icon = item.icon;
               const hasChildren = Boolean(item.children?.length);

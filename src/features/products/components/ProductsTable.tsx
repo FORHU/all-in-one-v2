@@ -7,7 +7,16 @@ import { BulkToolbar } from "./BulkToolbar";
 import { ProductRow } from "./ProductRow";
 import { ProductQuickViewModal } from "./ProductQuickViewModal";
 
-export function ProductsTable() {
+type ProductsTableCategory = {
+  slug: string;
+  name: string;
+};
+
+type ProductsTableProps = {
+  categories?: ProductsTableCategory[];
+};
+
+export function ProductsTable({ categories = [] }: ProductsTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Product["status"]>(
     "all",
@@ -52,6 +61,7 @@ export function ProductsTable() {
         onStatusFilterChange={setStatusFilter}
         categoryFilter={categoryFilter}
         onCategoryFilterChange={setCategoryFilter}
+        categories={categories}
         search={search}
         onSearchChange={setSearch}
         resultsCount={filtered.length}

@@ -8,6 +8,7 @@ import {
   setRefreshToken,
   setToken,
 } from "@/shared/lib/token";
+import { getTenantSlug } from "@/shared/tenant/tenant-storage";
 
 function classify(
   status: number,
@@ -91,11 +92,13 @@ export async function fetcher<T>(
 ): Promise<T> {
   try {
     const token = getToken();
+    const tenantSlug = getTenantSlug();
     const res = await fetch(`${env.NEXT_PUBLIC_API_URL}${url}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(tenantSlug ? { "x-tenant-slug": tenantSlug } : {}),
         ...(options?.headers || {}),
       },
     });

@@ -1,7 +1,11 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import { AppSidebar, type SidebarUser } from "@/shared/components/AppSidebar";
+import {
+  AppSidebar,
+  type SidebarUser,
+  type SidebarTenant,
+} from "@/shared/components/AppSidebar";
 import { useUIStore } from "@/shared/stores/ui.store";
 
 type AppShellProps = {
@@ -10,6 +14,10 @@ type AppShellProps = {
   onLogout: () => void;
   me?: SidebarUser;
   isMeLoading?: boolean;
+  tenants?: SidebarTenant[];
+  selectedTenantSlug?: string | null;
+  onTenantChange?: (slug: string) => void;
+  isTenantsLoading?: boolean;
 };
 
 export function AppShell({
@@ -18,12 +26,24 @@ export function AppShell({
   onLogout,
   me,
   isMeLoading,
+  tenants,
+  selectedTenantSlug,
+  onTenantChange,
+  isTenantsLoading,
 }: AppShellProps) {
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
 
   return (
     <div className="flex min-h-screen bg-[var(--shop-bg-soft)]">
-      <AppSidebar onLogout={onLogout} me={me} isMeLoading={isMeLoading} />
+      <AppSidebar
+        onLogout={onLogout}
+        me={me}
+        isMeLoading={isMeLoading}
+        tenants={tenants}
+        selectedTenantSlug={selectedTenantSlug}
+        onTenantChange={onTenantChange}
+        isTenantsLoading={isTenantsLoading}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 lg:hidden">

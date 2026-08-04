@@ -1,0 +1,94 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useCategory } from "../hooks/useCategory";
+import { CategoryCard } from "./CategoryCard";
+import { CategoryGridSkeleton } from "./CategoryGridSkeleton";
+
+export function CategoryDetailView({ slug }: { slug: string }) {
+  // Same tenantSlug/localStorage hydration hazard as CategoryGrid.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const { data: category, isLoading, error, refetch } = useCategory(slug);
+
+  if (!mounted || isLoading) {
+    return <CategoryGridSkeleton />;
+  }
+
+  // Same rationale as CategoryGrid: distinguish a real fetch failure from a
+  // genuine 404, which `!category` alone can't tell apart.
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-dashed border-[var(--shop-danger)] bg-[var(--shop-surface)] p-10 text-center">
+        <p className="text-sm text-[var(--shop-danger)]">
+          Failed to load this category.
+        </p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="mt-3 text-xs font-semibold text-[var(--shop-accent)] hover:underline"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (!category) {
+    return (
+      <div className="rounded-2xl border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] p-10 text-center">
+        <p className="text-sm text-[var(--shop-text-muted)]">
+          Category not found.
+        </p>
+        <Link
+          href="/products/categories"
+          className="mt-3 inline-block text-xs font-medium text-[var(--shop-accent)]"
+        >
+          Back to categories
+        </Link>
+      </div>
+    );
+  }
+
+  const productCount = category.products.length;
+
+  return (
+    <div>
+      <Link
+        href={
+          category.parent
+            ? `/products/categories/${category.parent.slug}`
+            : "/products/categories"
+        }
+        className="mb-4 inline-block text-xs font-medium text-[var(--shop-text-muted)] hover:text-[var(--shop-accent)]"
+      >
+        ← {category.parent ? category.parent.name : "All categories"}
+      </Link>
+
+      <div className="mb-6">
+        <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
+          {category.name}
+        </h2>
+        <p className="mt-1 text-sm text-[var(--shop-text-muted)]">
+          {productCount} product{productCount === 1 ? "" : "s"} in this category
+        </p>
+      </div>
+
+      {category.children.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] p-10 text-center">
+          <p className="text-sm text-[var(--shop-text-muted)]">
+            No subcategories.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {category.children.map((c) => (
+            <CategoryCard key={c.id} category={c} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

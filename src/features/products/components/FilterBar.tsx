@@ -1,6 +1,6 @@
 "use client";
 
-import { CATEGORY_NAMES, type Product } from "../data/mock-products";
+import { type Product } from "../data/mock-products";
 
 const STATUS_CHIPS: { key: "all" | Product["status"]; label: string }[] = [
   { key: "all", label: "All" },
@@ -10,11 +10,20 @@ const STATUS_CHIPS: { key: "all" | Product["status"]; label: string }[] = [
   { key: "Archived", label: "Archived" },
 ];
 
+// Cross-feature imports are blocked, so this comes from features/categories
+// via app/-level composition — ProductsTable receives it as a prop and
+// threads it down here rather than FilterBar importing useCategories itself.
+type FilterBarCategory = {
+  slug: string;
+  name: string;
+};
+
 type FilterBarProps = {
   statusFilter: "all" | Product["status"];
   onStatusFilterChange: (status: "all" | Product["status"]) => void;
   categoryFilter: string;
   onCategoryFilterChange: (category: string) => void;
+  categories: FilterBarCategory[];
   search: string;
   onSearchChange: (search: string) => void;
   resultsCount: number;
@@ -25,6 +34,7 @@ export function FilterBar({
   onStatusFilterChange,
   categoryFilter,
   onCategoryFilterChange,
+  categories,
   search,
   onSearchChange,
   resultsCount,
@@ -58,9 +68,9 @@ export function FilterBar({
           className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2.5 py-1.5 text-xs text-[var(--shop-text)] outline-none"
         >
           <option value="all">All categories</option>
-          {CATEGORY_NAMES.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
+          {categories.map((cat) => (
+            <option key={cat.slug} value={cat.name}>
+              {cat.name}
             </option>
           ))}
         </select>

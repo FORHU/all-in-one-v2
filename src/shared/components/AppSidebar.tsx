@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, LogOut, Shield, X } from "lucide-react";
+import { ChevronDown, LogOut, Shield, Store, X } from "lucide-react";
 import { ADMIN_NAV_ITEMS } from "@/shared/navigation/nav-items";
 import { useUIStore } from "@/shared/stores/ui.store";
 
@@ -15,17 +15,36 @@ export type SidebarUser = {
   email: string;
 };
 
+// Same rule applies to the tenant list — AdminLayout fetches it (features/tenants)
+// and passes plain data down, so this component never imports a feature.
+export type SidebarTenant = {
+  slug: string;
+  name: string;
+};
+
 type AppSidebarProps = {
   onLogout: () => void;
   me?: SidebarUser;
   isMeLoading?: boolean;
+  tenants?: SidebarTenant[];
+  selectedTenantSlug?: string | null;
+  onTenantChange?: (slug: string) => void;
+  isTenantsLoading?: boolean;
 };
 
 function isNavItemActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AppSidebar({ onLogout, me, isMeLoading }: AppSidebarProps) {
+export function AppSidebar({
+  onLogout,
+  me,
+  isMeLoading,
+  tenants,
+  selectedTenantSlug,
+  onTenantChange,
+  isTenantsLoading,
+}: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
@@ -97,6 +116,28 @@ export function AppSidebar({ onLogout, me, isMeLoading }: AppSidebarProps) {
           >
             <X className="h-4 w-4" />
           </button>
+        </div>
+
+        <div className="border-b border-white/10 px-3 py-3">
+          {mounted && isTenantsLoading ? (
+            <div className="h-9 animate-pulse rounded-md bg-white/5" />
+          ) : mounted && tenants && tenants.length > 0 ? (
+            <label className="flex items-center gap-2 rounded-md bg-white/5 px-2.5 py-2">
+              <Store className="h-3.5 w-3.5 shrink-0 text-[var(--shop-band-text-muted)]" />
+              <select
+                value={selectedTenantSlug ?? ""}
+                onChange={(e) => onTenantChange?.(e.target.value)}
+                aria-label="Select store"
+                className="w-full truncate bg-transparent text-xs font-medium text-[var(--shop-band-text)] outline-none [&>option]:text-[var(--shop-ink)]"
+              >
+                {tenants.map((t) => (
+                  <option key={t.slug} value={t.slug}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">

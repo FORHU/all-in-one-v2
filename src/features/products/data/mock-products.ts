@@ -15,15 +15,6 @@ export type Product = {
   swatchB: string;
 };
 
-export const CATEGORY_NAMES = [
-  "Apparel",
-  "Footwear",
-  "Accessories",
-  "Home Goods",
-  "Electronics",
-  "Beauty",
-] as const;
-
 export const PRODUCTS: Product[] = [
   {
     id: 1,
@@ -217,15 +208,6 @@ export const PRODUCTS: Product[] = [
     swatchA: "#d8ccb0",
     swatchB: "#b89f78",
   },
-];
-
-export const CATEGORY_META = [
-  { name: "Apparel", numeral: "01", bandColor: "#2a2440" },
-  { name: "Footwear", numeral: "02", bandColor: "#4d5b6e" },
-  { name: "Accessories", numeral: "03", bandColor: "#a8845a" },
-  { name: "Home Goods", numeral: "04", bandColor: "#7c8f82" },
-  { name: "Electronics", numeral: "05", bandColor: "#1b1730" },
-  { name: "Beauty", numeral: "06", bandColor: "#c97b86" },
 ];
 
 export const BRANDS = [

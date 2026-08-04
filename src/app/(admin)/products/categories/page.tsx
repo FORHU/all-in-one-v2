@@ -1,5 +1,5 @@
 import { ProductsStatsBar } from "@/features/products/components/ProductsStatsBar";
-import { CategoryGrid } from "@/features/products/components/CategoryGrid";
+import { CategoryGrid } from "@/features/categories/components/CategoryGrid";
 
 export default function CategoriesPage() {
   return (

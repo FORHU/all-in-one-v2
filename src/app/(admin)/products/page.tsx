@@ -1,7 +1,15 @@
+"use client";
+
 import { ProductsStatsBar } from "@/features/products/components/ProductsStatsBar";
 import { ProductsTable } from "@/features/products/components/ProductsTable";
+import { useCategories } from "@/features/categories/hooks/useCategories";
 
+// products/ and categories/ can't import each other directly (strict feature
+// isolation) — this page composes both features and threads the category
+// list down into ProductsTable -> FilterBar as plain props.
 export default function ProductsPage() {
+  const { data: categories } = useCategories();
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
       <div className="mb-6">
@@ -13,7 +21,7 @@ export default function ProductsPage() {
         </p>
       </div>
       <ProductsStatsBar />
-      <ProductsTable />
+      <ProductsTable categories={categories ?? []} />
     </div>
   );
 }

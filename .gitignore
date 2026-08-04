@@ -37,6 +37,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# impeccable design-review hook output (regenerated per session)
+.impeccable/
+
+# local-only reference docs, not meant for the shared repo
+/PRODUCT.md
+/docs/Framework-Structure/api-guide.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

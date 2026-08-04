@@ -4,6 +4,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@/shared/components/AppShell";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 import { useMe } from "@/features/auth/hooks/useAuth";
+import { useTenants } from "@/features/tenants/hooks/useTenants";
+import { useTenantStore } from "@/shared/tenant/tenant.store";
 import { ADMIN_NAV_ITEMS } from "@/shared/navigation/nav-items";
 import { clearRefreshToken } from "@/shared/lib/token";
 
@@ -28,6 +30,10 @@ export default function AdminLayout({
   const setRole = useAuthStore((s) => s.setRole);
   const { data: me, isLoading: isMeLoading } = useMe();
 
+  const { data: tenants, isLoading: isTenantsLoading } = useTenants();
+  const tenantSlug = useTenantStore((s) => s.tenantSlug);
+  const setTenantSlug = useTenantStore((s) => s.setTenantSlug);
+
   const handleLogout = () => {
     setToken(null);
     clearRefreshToken();
@@ -42,6 +48,10 @@ export default function AdminLayout({
       title={getPageTitle(pathname)}
       me={me}
       isMeLoading={isMeLoading}
+      tenants={tenants}
+      selectedTenantSlug={tenantSlug}
+      onTenantChange={setTenantSlug}
+      isTenantsLoading={isTenantsLoading}
     >
       {children}
     </AppShell>

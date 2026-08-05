@@ -1,6 +1,6 @@
 "use client";
 
-import type { StaffRole } from "../data/mock-staff";
+import type { StaffRole } from "../lib/presentation";
 
 type StaffStatsBarProps = {
   accounts: { role: StaffRole | null }[];

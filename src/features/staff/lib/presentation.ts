@@ -1,4 +1,6 @@
-import type { StaffRole } from "../data/mock-staff";
+// Display-only label for a staff-tier account, derived from the backend's
+// role enum via displayRole() below — not sourced from any mock/fixture data.
+export type StaffRole = "Super Admin" | "Admin" | "Developer";
 
 export const ROLE_STYLES: Record<StaffRole, { bg: string; color: string }> = {
   "Super Admin": { bg: "var(--shop-danger-bg)", color: "var(--shop-accent)" },

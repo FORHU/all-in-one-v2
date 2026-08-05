@@ -62,7 +62,14 @@ export function AppShell({
           ) : null}
         </header>
 
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto">
+          <div
+            key={selectedTenantSlug ?? "platform"}
+            className="shop-content-fade"
+          >
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

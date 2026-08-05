@@ -25,8 +25,24 @@ function createWrapper() {
 }
 
 const MOCK_USERS = [
-  { id: "1", name: "Alice", email: "alice@example.com" },
-  { id: "2", name: "Bob", email: "bob@example.com" },
+  {
+    id: "1",
+    name: "Alice",
+    email: "alice@example.com",
+    username: "alice",
+    role: "ADMIN" as const,
+    isActive: true,
+    lastLoginAt: "2026-08-01T00:00:00.000Z",
+  },
+  {
+    id: "2",
+    name: "Bob",
+    email: "bob@example.com",
+    username: "bob",
+    role: "USER" as const,
+    isActive: true,
+    lastLoginAt: null,
+  },
 ];
 
 describe("useUsers", () => {

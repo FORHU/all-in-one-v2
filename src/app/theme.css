@@ -31,6 +31,17 @@
   --shop-neutral: #8a7a55;
   --shop-neutral-bg: #f2eee6;
 
+  /* Tenant avatar identity colors — for recognizing *which* store, never for
+     state. Kept out of the semantic status palette above on purpose: reusing
+     --shop-success/--shop-warning/etc here would make a tenant's avatar look
+     like a status badge (e.g. "this store is in a warning state") next to
+     the real order/stock status colors elsewhere in the app. */
+  --shop-avatar-1: #5b6ee8;
+  --shop-avatar-2: #1f9e8a;
+  --shop-avatar-3: #7c6bc4;
+  --shop-avatar-4: #4a7fb5;
+  --shop-avatar-5: #9b5a8f;
+
   background: var(--shop-bg-soft);
   color: var(--shop-text);
   font-family: var(--font-shop-body);
@@ -38,4 +49,71 @@
 
 .shop-display {
   font-family: var(--font-shop-display);
+}
+
+/* Confirms a store switch happened right at the control the user clicked,
+   instead of relying on the nav list swap (below) to be noticed on its own.
+   --shop-pulse-color is set inline per-instance so the ring matches whatever
+   the avatar chip actually shows (tenant color, or the muted platform gray). */
+@keyframes shop-tenant-switch-pulse {
+  0% {
+    box-shadow: 0 0 0 0
+      color-mix(
+        in srgb,
+        var(--shop-pulse-color, var(--shop-accent)) 55%,
+        transparent
+      );
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.shop-tenant-switch-pulse {
+  animation: shop-tenant-switch-pulse 550ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Nav item set genuinely differs between Platform and Store scope — a fade
+   keeps the swap reading as a deliberate scope change, not a layout glitch.
+   Reused as-is for the store-switcher dropdown's open transition. */
+@keyframes shop-scope-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.shop-scope-fade {
+  animation: shop-scope-fade-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Confirms the page content itself belongs to the tenant just switched to —
+   needed because a route that exists in both scopes (e.g. /dashboard)
+   doesn't remount or navigate on a tenant switch, so without this the page
+   just sits there with no sign it now means something different. Plain
+   opacity (no translate) since this wraps full page content, not a small
+   list — a vertical shift on a tall page reads as a jump, not a cue. */
+@keyframes shop-content-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.shop-content-fade {
+  animation: shop-content-fade-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-tenant-switch-pulse,
+  .shop-scope-fade,
+  .shop-content-fade {
+    animation: none;
+  }
 }

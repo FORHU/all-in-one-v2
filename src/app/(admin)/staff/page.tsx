@@ -2,9 +2,27 @@
 
 import { UserPlus } from "lucide-react";
 import { StaffTable } from "@/features/staff/components/StaffTable";
+import { useUsers } from "@/features/users/hooks/useUsers";
 import { notify } from "@/shared/lib/notify";
 
+// Staff & Roles only manages staff-tier accounts — plain "USER" accounts
+// (customers) come back from the same endpoint but don't belong here.
+const STAFF_ROLES = new Set(["ADMIN", "SUPER_ADMIN", "DEVELOPER"]);
+
 export default function StaffPage() {
+  const { data, isLoading, isError, error, refetch } = useUsers();
+
+  const staffAccounts = data
+    ?.filter((u) => STAFF_ROLES.has(u.role))
+    .map((u) => ({
+      id: u.id,
+      name: u.name ?? u.username,
+      email: u.email,
+      role: u.role,
+      isActive: u.isActive,
+      lastLoginAt: u.lastLoginAt,
+    }));
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -26,7 +44,13 @@ export default function StaffPage() {
           Invite Staff
         </button>
       </div>
-      <StaffTable />
+      <StaffTable
+        accounts={staffAccounts}
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        onRetry={refetch}
+      />
     </div>
   );
 }

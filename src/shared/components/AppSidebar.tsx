@@ -348,10 +348,10 @@ export function AppSidebar({
                         }
                       }}
                       className={[
-                        "flex w-full items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition",
+                        "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition",
                         active
-                          ? "border-[var(--shop-accent)] bg-white/5 text-[var(--shop-band-text)]"
-                          : "border-transparent text-[var(--shop-band-text-muted)] hover:bg-white/5 hover:text-[var(--shop-band-text)]",
+                          ? "bg-[color-mix(in_srgb,var(--shop-accent)_16%,transparent)] text-[var(--shop-band-text)]"
+                          : "text-[var(--shop-band-text-muted)] hover:bg-white/5 hover:text-[var(--shop-band-text)]",
                       ].join(" ")}
                       aria-expanded={isOpen}
                     >
@@ -380,10 +380,10 @@ export function AppSidebar({
                         if (sidebarOpen) toggleSidebar();
                       }}
                       className={[
-                        "flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition",
+                        "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition",
                         active
-                          ? "border-[var(--shop-accent)] bg-white/5 text-[var(--shop-band-text)]"
-                          : "border-transparent text-[var(--shop-band-text-muted)] hover:bg-white/5 hover:text-[var(--shop-band-text)]",
+                          ? "bg-[color-mix(in_srgb,var(--shop-accent)_16%,transparent)] text-[var(--shop-band-text)]"
+                          : "text-[var(--shop-band-text-muted)] hover:bg-white/5 hover:text-[var(--shop-band-text)]",
                       ].join(" ")}
                     >
                       <Icon

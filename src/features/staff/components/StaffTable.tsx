@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, MoreHorizontal, RotateCw } from "lucide-react";
+import {
+  AlertTriangle as AlertTriangleIcon,
+  MoreHorizontal as MoreHorizontalIcon,
+  RotateCw as RotateCwIcon,
+} from "lucide-react";
 import { notify } from "@/shared/lib/notify";
 import { StaffStatsBar } from "./StaffStatsBar";
 import { StaffFilterBar } from "./StaffFilterBar";
@@ -113,7 +117,7 @@ export function StaffTable({
         ) : isError ? (
           <div role="alert" className="flex flex-col items-start gap-3 p-6">
             <div className="flex items-center gap-2.5">
-              <AlertTriangle
+              <AlertTriangleIcon
                 className="h-5 w-5 flex-shrink-0"
                 style={{ color: "var(--shop-danger)" }}
                 strokeWidth={2.25}
@@ -133,7 +137,7 @@ export function StaffTable({
               className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90"
               style={{ backgroundColor: "var(--shop-accent-dark)" }}
             >
-              <RotateCw className="h-3.5 w-3.5" strokeWidth={2.5} />
+              <RotateCwIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
               Try again
             </button>
           </div>
@@ -207,7 +211,7 @@ export function StaffTable({
                       aria-label={`Actions for ${m.name}`}
                       className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
                     >
-                      <MoreHorizontal className="h-4 w-4" />
+                      <MoreHorizontalIcon className="h-4 w-4" />
                     </button>
                     {openMenu === m.id && (
                       <div className="absolute right-0 top-8 z-10 w-[160px] rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] p-1.5 shadow-lg">

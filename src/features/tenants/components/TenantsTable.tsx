@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal as MoreHorizontalIcon } from "lucide-react";
 import { useTenantStore } from "@/shared/tenant/tenant.store";
 import { notify } from "@/shared/lib/notify";
 import { useTenants } from "../hooks/useTenants";
@@ -169,7 +169,7 @@ export function TenantsTable() {
                       aria-label={`Actions for ${t.name}`}
                       className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
                     >
-                      <MoreHorizontal className="h-4 w-4" />
+                      <MoreHorizontalIcon className="h-4 w-4" />
                     </button>
                     {openMenu === t.id && (
                       <div className="absolute right-0 top-8 z-10 w-[160px] rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] p-1.5 shadow-lg">

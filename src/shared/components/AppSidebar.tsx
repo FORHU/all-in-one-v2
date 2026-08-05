@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Globe, LogOut, Shield, X } from "lucide-react";
+import {
+  Check as CheckIcon,
+  ChevronDown as ChevronDownIcon,
+  Globe as GlobeIcon,
+  LogOut as LogOutIcon,
+  Shield as ShieldIcon,
+  X as XIcon,
+} from "lucide-react";
 import { getNavItems } from "@/shared/navigation/nav-items";
 import { useUIStore } from "@/shared/stores/ui.store";
 import { notify } from "@/shared/lib/notify";
@@ -197,7 +204,7 @@ export function AppSidebar({
         <div className="flex h-16 items-center justify-between border-b border-white/10 px-5">
           <Link href="/dashboard" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--shop-accent)]">
-              <Shield
+              <ShieldIcon
                 className="h-4 w-4 text-[var(--shop-ink)]"
                 strokeWidth={2.25}
               />
@@ -217,7 +224,7 @@ export function AppSidebar({
             className="rounded-md p-1.5 text-[var(--shop-band-text-muted)] hover:bg-white/5 lg:hidden"
             aria-label="Close menu"
           >
-            <X className="h-4 w-4" />
+            <XIcon className="h-4 w-4" />
           </button>
         </div>
 
@@ -256,7 +263,7 @@ export function AppSidebar({
                   style={{ background: currentChipColor }}
                 >
                   {isPlatformScope ? (
-                    <Globe className="h-3.5 w-3.5" />
+                    <GlobeIcon className="h-3.5 w-3.5" />
                   ) : (
                     initials(selectedTenant?.name ?? "")
                   )}
@@ -269,7 +276,7 @@ export function AppSidebar({
                     {isPlatformScope ? "Platform scope" : "Store scope"}
                   </p>
                 </div>
-                <ChevronDown
+                <ChevronDownIcon
                   className={[
                     "h-3.5 w-3.5 shrink-0 text-[var(--shop-band-text-muted)] transition-transform",
                     tenantMenuOpen ? "rotate-180" : "",
@@ -287,13 +294,13 @@ export function AppSidebar({
                     className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left hover:bg-white/5"
                   >
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--shop-band-text-muted)] text-white">
-                      <Globe className="h-3.5 w-3.5" />
+                      <GlobeIcon className="h-3.5 w-3.5" />
                     </div>
                     <span className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--shop-band-text)]">
                       Platform (All Stores)
                     </span>
                     {isPlatformScope && (
-                      <Check className="h-3.5 w-3.5 shrink-0 text-[var(--shop-accent)]" />
+                      <CheckIcon className="h-3.5 w-3.5 shrink-0 text-[var(--shop-accent)]" />
                     )}
                   </button>
                   {tenants.map((t) => (
@@ -313,7 +320,7 @@ export function AppSidebar({
                         {t.name}
                       </span>
                       {!isPlatformScope && selectedTenantSlug === t.slug && (
-                        <Check className="h-3.5 w-3.5 shrink-0 text-[var(--shop-accent)]" />
+                        <CheckIcon className="h-3.5 w-3.5 shrink-0 text-[var(--shop-accent)]" />
                       )}
                     </button>
                   ))}
@@ -366,7 +373,7 @@ export function AppSidebar({
                       <span className="min-w-0 flex-1 truncate text-left">
                         {item.label}
                       </span>
-                      <ChevronDown
+                      <ChevronDownIcon
                         className={[
                           "h-4 w-4 shrink-0 text-[var(--shop-band-text-muted)] transition-transform",
                           isOpen ? "rotate-180" : "",
@@ -453,7 +460,7 @@ export function AppSidebar({
             onClick={onLogout}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-[var(--shop-band-text-muted)] transition hover:bg-white/5 hover:text-[var(--shop-accent)]"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOutIcon className="h-4 w-4" />
             Sign out
           </button>
         </div>

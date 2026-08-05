@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus as PlusIcon } from "lucide-react";
 import { TenantsTable } from "@/features/tenants/components/TenantsTable";
 import { notify } from "@/shared/lib/notify";
 
@@ -22,7 +22,7 @@ export default function TenantsPage() {
           onClick={() => notify.info("Store provisioning isn't available yet.")}
           className="flex items-center gap-1.5 rounded-full bg-[var(--shop-accent-dark)] px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 active:scale-[0.99]"
         >
-          <Plus className="h-4 w-4" strokeWidth={2.5} />
+          <PlusIcon className="h-4 w-4" strokeWidth={2.5} />
           Add Store
         </button>
       </div>

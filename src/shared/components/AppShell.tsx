@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { Menu as MenuIcon } from "lucide-react";
 import {
   AppSidebar,
   type SidebarUser,
@@ -53,7 +53,7 @@ export function AppShell({
             className="rounded-md p-2 text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)] lg:hidden"
             aria-label="Open menu"
           >
-            <Menu className="h-5 w-5" />
+            <MenuIcon className="h-5 w-5" />
           </button>
           {title ? (
             <h1 className="shop-display text-base font-semibold uppercase tracking-wide text-[var(--shop-text)]">

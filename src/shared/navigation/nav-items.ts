@@ -1,17 +1,17 @@
 import {
-  LayoutDashboard,
-  Truck,
-  Package,
-  ShoppingCart,
-  Users,
-  Megaphone,
-  FileBarChart2,
-  Wrench,
-  Plug,
-  Settings,
-  ScrollText,
-  Building2,
-  UserCog,
+  LayoutDashboard as LayoutDashboardIcon,
+  Truck as TruckIcon,
+  Package as PackageIcon,
+  ShoppingCart as ShoppingCartIcon,
+  Users as UsersIcon,
+  Megaphone as MegaphoneIcon,
+  FileBarChart2 as FileBarChart2Icon,
+  Wrench as WrenchIcon,
+  Plug as PlugIcon,
+  Settings as SettingsIcon,
+  ScrollText as ScrollTextIcon,
+  Building2 as Building2Icon,
+  UserCog as UserCogIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,11 +30,11 @@ export type NavItem = {
 // Shown while a single store is selected in the sidebar switcher — every
 // item here operates on that one tenant's data.
 export const STORE_NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon },
   {
     label: "Suppliers",
     href: "/suppliers",
-    icon: Truck,
+    icon: TruckIcon,
     children: [
       { label: "All Suppliers", href: "/suppliers" },
       { label: "Connected Accounts", href: "/suppliers/connected-accounts" },
@@ -44,7 +44,7 @@ export const STORE_NAV_ITEMS: NavItem[] = [
   {
     label: "Products",
     href: "/products",
-    icon: Package,
+    icon: PackageIcon,
     children: [
       { label: "All Products", href: "/products" },
       { label: "Categories", href: "/products/categories" },
@@ -55,7 +55,7 @@ export const STORE_NAV_ITEMS: NavItem[] = [
   {
     label: "Orders",
     href: "/orders",
-    icon: ShoppingCart,
+    icon: ShoppingCartIcon,
     children: [
       { label: "All Orders", href: "/orders" },
       { label: "Processing", href: "/orders/processing" },
@@ -63,42 +63,42 @@ export const STORE_NAV_ITEMS: NavItem[] = [
       { label: "Returns", href: "/orders/returns" },
     ],
   },
-  { label: "Customers", href: "/customers", icon: Users },
+  { label: "Customers", href: "/customers", icon: UsersIcon },
   {
     label: "Marketing",
     href: "/marketing",
-    icon: Megaphone,
+    icon: MegaphoneIcon,
     children: [
       { label: "Campaigns", href: "/marketing" },
       { label: "Social Accounts", href: "/marketing/social-accounts" },
       { label: "AI Content", href: "/marketing/ai-content" },
     ],
   },
-  { label: "Reports", href: "/reports", icon: FileBarChart2 },
+  { label: "Reports", href: "/reports", icon: FileBarChart2Icon },
   {
     label: "Tools",
     href: "/tools",
-    icon: Wrench,
+    icon: WrenchIcon,
     children: [
       { label: "Product Sync", href: "/tools" },
       { label: "Bulk Update", href: "/tools/bulk-update" },
       { label: "AI Generator", href: "/tools/ai-generator" },
     ],
   },
-  { label: "Integrations", href: "/integrations", icon: Plug },
-  { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Activity Logs", href: "/activity-logs", icon: ScrollText },
+  { label: "Integrations", href: "/integrations", icon: PlugIcon },
+  { label: "Settings", href: "/settings", icon: SettingsIcon },
+  { label: "Activity Logs", href: "/activity-logs", icon: ScrollTextIcon },
 ];
 
 // Shown while "Platform" is selected — super-admin-only, cross-tenant
 // concerns. Store-scoped items (Products, Orders, Customers, ...) don't
 // apply here since there's no single tenant to operate on.
 export const PLATFORM_NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Tenants", href: "/tenants", icon: Building2 },
-  { label: "Staff & Roles", href: "/staff", icon: UserCog },
-  { label: "Activity Logs", href: "/activity-logs", icon: ScrollText },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon },
+  { label: "Tenants", href: "/tenants", icon: Building2Icon },
+  { label: "Staff & Roles", href: "/staff", icon: UserCogIcon },
+  { label: "Activity Logs", href: "/activity-logs", icon: ScrollTextIcon },
+  { label: "Settings", href: "/settings", icon: SettingsIcon },
 ];
 
 export function getNavItems(isPlatformScope: boolean): NavItem[] {

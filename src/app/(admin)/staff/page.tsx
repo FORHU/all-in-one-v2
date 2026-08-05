@@ -1,6 +1,6 @@
 "use client";
 
-import { UserPlus } from "lucide-react";
+import { UserPlus as UserPlusIcon } from "lucide-react";
 import { StaffTable } from "@/features/staff/components/StaffTable";
 import { useUsers } from "@/features/users/hooks/useUsers";
 import { notify } from "@/shared/lib/notify";
@@ -40,7 +40,7 @@ export default function StaffPage() {
           onClick={() => notify.info("Inviting staff isn't wired up yet.")}
           className="flex items-center gap-1.5 rounded-full bg-[var(--shop-accent-dark)] px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 active:scale-[0.99]"
         >
-          <UserPlus className="h-4 w-4" strokeWidth={2.5} />
+          <UserPlusIcon className="h-4 w-4" strokeWidth={2.5} />
           Invite Staff
         </button>
       </div>

@@ -1,4 +1,8 @@
 import { z } from "zod";
+import { ApiRoleSchema, type ApiRole } from "@/shared/auth/api-role";
+
+export { ApiRoleSchema };
+export type { ApiRole };
 
 /** Body for POST /api/v2/auth/register */
 export const RegisterInputSchema = z.object({
@@ -39,20 +43,6 @@ export const LoginInputSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof LoginInputSchema>;
-
-/**
- * Single source of truth for the backend's role enum. Login/refresh and
- * users/me previously declared this independently and drifted (login was
- * missing DEVELOPER), so DEVELOPER-role accounts passed backend auth but
- * threw a ZodError on the client. Both schemas below now share this.
- */
-export const ApiRoleSchema = z.enum([
-  "USER",
-  "ADMIN",
-  "SUPER_ADMIN",
-  "DEVELOPER",
-]);
-export type ApiRole = z.infer<typeof ApiRoleSchema>;
 
 export const LoginUserSchema = z.object({
   id: z.string(),

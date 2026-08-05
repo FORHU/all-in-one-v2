@@ -1,5 +1,5 @@
 import { SectionSubTabs } from "@/shared/components/SectionSubTabs";
-import { ADMIN_NAV_ITEMS } from "@/shared/navigation/nav-items";
+import { STORE_NAV_ITEMS } from "@/shared/navigation/nav-items";
 
 type SectionTabsLayoutProps = {
   sectionHref: string;
@@ -10,7 +10,7 @@ export function SectionTabsLayout({
   sectionHref,
   children,
 }: SectionTabsLayoutProps) {
-  const section = ADMIN_NAV_ITEMS.find((item) => item.href === sectionHref);
+  const section = STORE_NAV_ITEMS.find((item) => item.href === sectionHref);
   const tabs = section?.children;
 
   if (!tabs?.length) {

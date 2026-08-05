@@ -3,7 +3,13 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, Eye, EyeOff, UserPlus } from "lucide-react";
+import {
+  ArrowRight as ArrowRightIcon,
+  Eye as EyeIcon,
+  EyeOff as EyeOffIcon,
+  Loader2 as Loader2Icon,
+  UserPlus as UserPlusIcon,
+} from "lucide-react";
 import { useRegister } from "../hooks/useRegister";
 import { RegisterInputSchema } from "../contracts/auth.contract";
 import { notify } from "@/shared/lib/notify";
@@ -46,7 +52,9 @@ export function RegisterForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const registerMutation = useRegister({ onValidationError: setFieldErrors });
-  const isSubmitting = registerMutation.isPending;
+  // See LoginForm — kept true through `isSuccess` so the button doesn't
+  // flip back to idle during the redirect to /.
+  const isSubmitting = registerMutation.isPending || registerMutation.isSuccess;
   const strength = useMemo(() => getPasswordStrength(password), [password]);
 
   const clearFieldError = (field: string) => {
@@ -103,7 +111,7 @@ export function RegisterForm() {
       {/* Header */}
       <div className="mb-8">
         <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--shop-ink)]">
-          <UserPlus
+          <UserPlusIcon
             className="h-5 w-5 text-[var(--shop-bg)]"
             strokeWidth={2.25}
           />
@@ -116,7 +124,7 @@ export function RegisterForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <div>
           <label htmlFor="email" className={labelClassName}>
             Work Email
@@ -192,9 +200,9 @@ export function RegisterForm() {
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
-                <EyeOff className="h-4 w-4" />
+                <EyeOffIcon className="h-4 w-4" />
               ) : (
-                <Eye className="h-4 w-4" />
+                <EyeIcon className="h-4 w-4" />
               )}
             </button>
           </div>
@@ -250,9 +258,9 @@ export function RegisterForm() {
               }
             >
               {showConfirmPassword ? (
-                <EyeOff className="h-4 w-4" />
+                <EyeOffIcon className="h-4 w-4" />
               ) : (
-                <Eye className="h-4 w-4" />
+                <EyeIcon className="h-4 w-4" />
               )}
             </button>
           </div>
@@ -264,9 +272,12 @@ export function RegisterForm() {
           disabled={isSubmitting}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--shop-accent-dark)] px-4 py-3 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
         >
+          {isSubmitting ? (
+            <Loader2Icon className="h-4 w-4 animate-spin" strokeWidth={2.5} />
+          ) : null}
           {isSubmitting ? "Creating account…" : "Create Account"}
           {!isSubmitting && (
-            <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
+            <ArrowRightIcon className="h-4 w-4" strokeWidth={2.5} />
           )}
         </button>
       </form>

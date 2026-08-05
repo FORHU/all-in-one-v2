@@ -3,7 +3,13 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, Eye, EyeOff, Shield } from "lucide-react";
+import {
+  ArrowRight as ArrowRightIcon,
+  Eye as EyeIcon,
+  EyeOff as EyeOffIcon,
+  Loader2 as Loader2Icon,
+  Shield as ShieldIcon,
+} from "lucide-react";
 import { useLogin } from "../hooks/useLogin";
 import { LoginInputSchema } from "../contracts/auth.contract";
 import { notify } from "@/shared/lib/notify";
@@ -17,7 +23,11 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const isSubmitting = loginMutation.isPending;
+  // Keep the loading state through `isSuccess` too — onSuccess navigates to
+  // /dashboard, which then fetches the profile and tenant list before it has
+  // anything to render. Without this the button flips back to idle right as
+  // the toast fires, and the screen appears to freeze for that gap.
+  const isSubmitting = loginMutation.isPending || loginMutation.isSuccess;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -46,7 +56,7 @@ export function LoginForm() {
       {/* Header */}
       <div className="mb-8">
         <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--shop-ink)]">
-          <Shield
+          <ShieldIcon
             className="h-5 w-5 text-[var(--shop-bg)]"
             strokeWidth={2.25}
           />
@@ -59,7 +69,7 @@ export function LoginForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Work email */}
         <div>
           <label
@@ -129,9 +139,9 @@ export function LoginForm() {
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
-                <EyeOff className="h-4 w-4" />
+                <EyeOffIcon className="h-4 w-4" />
               ) : (
-                <Eye className="h-4 w-4" />
+                <EyeIcon className="h-4 w-4" />
               )}
             </button>
           </div>
@@ -148,9 +158,12 @@ export function LoginForm() {
           disabled={isSubmitting}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--shop-accent-dark)] px-4 py-3 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
         >
+          {isSubmitting ? (
+            <Loader2Icon className="h-4 w-4 animate-spin" strokeWidth={2.5} />
+          ) : null}
           {isSubmitting ? "Signing in…" : "Sign in"}
           {!isSubmitting && (
-            <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
+            <ArrowRightIcon className="h-4 w-4" strokeWidth={2.5} />
           )}
         </button>
       </form>

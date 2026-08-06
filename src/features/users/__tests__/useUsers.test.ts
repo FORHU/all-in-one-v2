@@ -32,7 +32,9 @@ const MOCK_USERS = [
     username: "alice",
     role: "ADMIN" as const,
     isActive: true,
+    isEmailVerified: true,
     lastLoginAt: "2026-08-01T00:00:00.000Z",
+    createdAt: "2026-01-01T00:00:00.000Z",
   },
   {
     id: "2",
@@ -41,9 +43,19 @@ const MOCK_USERS = [
     username: "bob",
     role: "USER" as const,
     isActive: true,
+    isEmailVerified: false,
     lastLoginAt: null,
+    createdAt: "2026-02-15T00:00:00.000Z",
   },
 ];
+
+const MOCK_USERS_PAGE = {
+  items: MOCK_USERS,
+  total: 2,
+  page: 1,
+  limit: 20,
+  totalPages: 1,
+};
 
 describe("useUsers", () => {
   beforeEach(() => {
@@ -51,7 +63,7 @@ describe("useUsers", () => {
   });
 
   it("returns users data on successful fetch", async () => {
-    vi.spyOn(usersClient, "getUsers").mockResolvedValue(MOCK_USERS);
+    vi.spyOn(usersClient, "getUsers").mockResolvedValue(MOCK_USERS_PAGE);
 
     const { result } = renderHook(() => useUsers(), {
       wrapper: createWrapper(),
@@ -63,7 +75,7 @@ describe("useUsers", () => {
     // Wait for data
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual(MOCK_USERS);
+    expect(result.current.data).toEqual(MOCK_USERS_PAGE);
     expect(result.current.error).toBeNull();
   });
 
@@ -82,7 +94,9 @@ describe("useUsers", () => {
   });
 
   it("calls getUsers exactly once on mount", async () => {
-    const spy = vi.spyOn(usersClient, "getUsers").mockResolvedValue(MOCK_USERS);
+    const spy = vi
+      .spyOn(usersClient, "getUsers")
+      .mockResolvedValue(MOCK_USERS_PAGE);
 
     const { result } = renderHook(() => useUsers(), {
       wrapper: createWrapper(),

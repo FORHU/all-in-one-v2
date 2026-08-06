@@ -10,10 +10,15 @@ import { notify } from "@/shared/lib/notify";
 const STAFF_ROLES = new Set(["ADMIN", "SUPER_ADMIN", "DEVELOPER"]);
 
 export default function StaffPage() {
-  const { data, isLoading, isError, error, refetch } = useUsers();
+  // Staff accounts are a small, bounded, internal roster (unlike Customers,
+  // which can grow unbounded) — a high limit keeps this a single request
+  // instead of paginating an already-short list.
+  const { data, isLoading, isError, error, refetch } = useUsers({
+    limit: 200,
+  });
 
-  const staffAccounts = data
-    ?.filter((u) => STAFF_ROLES.has(u.role))
+  const staffAccounts = data?.items
+    .filter((u) => STAFF_ROLES.has(u.role))
     .map((u) => ({
       id: u.id,
       name: u.name ?? u.username,

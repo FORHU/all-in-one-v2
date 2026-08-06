@@ -1,13 +1,43 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CustomersTable } from "@/features/customers/components/CustomersTable";
 import { useUsers } from "@/features/users/hooks/useUsers";
 
-export default function CustomersPage() {
-  const { data, isLoading, isError, error, refetch } = useUsers();
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 300;
 
-  const customerAccounts = data
-    ?.filter((u) => u.role === "USER")
+export default function CustomersPage() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Debounce free-text search so we don't fire a request per keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // A changed filter invalidates the current page number.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
+  const { data, isLoading, isError, error, refetch } = useUsers({
+    role: "USER",
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+    isActive: statusFilter === "all" ? undefined : statusFilter === "Active",
+  });
+
+  // Confirmed via DevTools: the backend accepts `role` but doesn't apply it —
+  // GET /api/v2/users?role=USER still returns ADMIN/DEVELOPER accounts. Kept
+  // in the request in case the backend starts honoring it, but the client
+  // filter stays as a required backstop, not a defensive extra.
+  const customerAccounts = data?.items
+    .filter((u) => u.role === "USER")
     .map((u) => ({
       id: u.id,
       name: u.name ?? u.username,
@@ -32,10 +62,21 @@ export default function CustomersPage() {
       </div>
       <CustomersTable
         accounts={customerAccounts}
+        // `data.total` counts every role (the backend ignores our role
+        // filter), so it overcounts customers. Falling back to this page's
+        // filtered row count until the backend actually filters by role.
+        total={customerAccounts?.length ?? 0}
         isLoading={isLoading}
         isError={isError}
         error={error}
         onRetry={refetch}
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        page={page}
+        totalPages={data?.totalPages ?? 1}
+        onPageChange={setPage}
       />
     </div>
   );

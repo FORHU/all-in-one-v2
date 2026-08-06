@@ -49,13 +49,21 @@ const MOCK_USERS = [
   },
 ];
 
+const MOCK_USERS_PAGE = {
+  items: MOCK_USERS,
+  total: 2,
+  page: 1,
+  limit: 20,
+  totalPages: 1,
+};
+
 describe("useUsers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("returns users data on successful fetch", async () => {
-    vi.spyOn(usersClient, "getUsers").mockResolvedValue(MOCK_USERS);
+    vi.spyOn(usersClient, "getUsers").mockResolvedValue(MOCK_USERS_PAGE);
 
     const { result } = renderHook(() => useUsers(), {
       wrapper: createWrapper(),
@@ -67,7 +75,7 @@ describe("useUsers", () => {
     // Wait for data
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual(MOCK_USERS);
+    expect(result.current.data).toEqual(MOCK_USERS_PAGE);
     expect(result.current.error).toBeNull();
   });
 
@@ -86,7 +94,9 @@ describe("useUsers", () => {
   });
 
   it("calls getUsers exactly once on mount", async () => {
-    const spy = vi.spyOn(usersClient, "getUsers").mockResolvedValue(MOCK_USERS);
+    const spy = vi
+      .spyOn(usersClient, "getUsers")
+      .mockResolvedValue(MOCK_USERS_PAGE);
 
     const { result } = renderHook(() => useUsers(), {
       wrapper: createWrapper(),

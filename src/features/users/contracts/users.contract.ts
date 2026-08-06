@@ -34,15 +34,23 @@ export const UserSchema = z.object({
   createdAt: z.string(),
 });
 
-/** GET /api/v2/users — { status, statusCode, data: { items, total } }. */
+/**
+ * GET /api/v2/users — { status, statusCode, data: { items, total, page, limit, totalPages } }.
+ * Matches the backend's generic PageResult wrapper (confirmed via its
+ * Swagger component schema), so page/limit are expected to work as
+ * standard pagination query params.
+ */
 export const UsersResponseSchema = z.object({
   status: z.string(),
   statusCode: z.number(),
   data: z.object({
     items: z.array(UserSchema),
     total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    totalPages: z.number(),
   }),
 });
 
 export type User = z.infer<typeof UserSchema>;
-export type UsersResponse = User[];
+export type UsersPage = z.infer<typeof UsersResponseSchema>["data"];

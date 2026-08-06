@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import {
   AlertTriangle as AlertTriangleIcon,
   BadgeCheck as BadgeCheckIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
   MoreHorizontal as MoreHorizontalIcon,
   RotateCw as RotateCwIcon,
 } from "lucide-react";
@@ -34,23 +36,39 @@ export type CustomerAccount = {
 
 type CustomersTableProps = {
   accounts: CustomerAccount[] | undefined;
+  total: number;
   isLoading: boolean;
   isError: boolean;
   error?: unknown;
   onRetry: () => void;
+  search: string;
+  onSearchChange: (search: string) => void;
+  statusFilter: string;
+  onStatusFilterChange: (status: string) => void;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 };
 
 export function CustomersTable({
   accounts,
+  total,
   isLoading,
   isError,
   error,
   onRetry,
+  search,
+  onSearchChange,
+  statusFilter,
+  onStatusFilterChange,
+  page,
+  totalPages,
+  onPageChange,
 }: CustomersTableProps) {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
+  // The API already applies the search/status filter and returns only this
+  // page's rows — no client-side filtering left to do.
   const rows = useMemo(
     () =>
       (accounts ?? []).map((a) => ({
@@ -65,21 +83,6 @@ export function CustomersTable({
     [accounts],
   );
 
-  const filtered = useMemo(() => {
-    return rows.filter((c) => {
-      if (statusFilter !== "all" && c.status !== statusFilter) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        if (
-          !c.name.toLowerCase().includes(q) &&
-          !c.email.toLowerCase().includes(q)
-        )
-          return false;
-      }
-      return true;
-    });
-  }, [rows, search, statusFilter]);
-
   const notAvailable = (message: string) => {
     notify.info(message);
     setOpenMenu(null);
@@ -87,12 +90,12 @@ export function CustomersTable({
 
   return (
     <div>
-      <CustomersStatsBar accounts={accounts ?? []} isLoading={isLoading} />
+      <CustomersStatsBar total={total} isLoading={isLoading} />
       <CustomersFilterBar
         search={search}
-        onSearchChange={setSearch}
+        onSearchChange={onSearchChange}
         statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
+        onStatusFilterChange={onStatusFilterChange}
       />
 
       <div className="overflow-hidden rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)]">
@@ -141,12 +144,12 @@ export function CustomersTable({
               Try again
             </button>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : rows.length === 0 ? (
           <p className="px-[18px] py-8 text-center text-sm text-[var(--shop-text-muted)]">
             No customers match your search.
           </p>
         ) : (
-          filtered.map((c) => {
+          rows.map((c) => {
             const statusStyle =
               STATUS_STYLES[c.status.toLowerCase()] ?? STATUS_STYLES.inactive;
             const verifiedStyle = c.isEmailVerified
@@ -254,6 +257,34 @@ export function CustomersTable({
           })
         )}
       </div>
+
+      {!isLoading && !isError && totalPages > 1 && (
+        <div className="mt-3.5 flex items-center justify-between">
+          <p className="text-xs text-[var(--shop-text-muted)]">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+              className="flex items-center gap-1 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeftIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
+              className="flex items-center gap-1 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+              <ChevronRightIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

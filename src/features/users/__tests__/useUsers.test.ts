@@ -32,7 +32,9 @@ const MOCK_USERS = [
     username: "alice",
     role: "ADMIN" as const,
     isActive: true,
+    isEmailVerified: true,
     lastLoginAt: "2026-08-01T00:00:00.000Z",
+    createdAt: "2026-01-01T00:00:00.000Z",
   },
   {
     id: "2",
@@ -41,7 +43,9 @@ const MOCK_USERS = [
     username: "bob",
     role: "USER" as const,
     isActive: true,
+    isEmailVerified: false,
     lastLoginAt: null,
+    createdAt: "2026-02-15T00:00:00.000Z",
   },
 ];
 

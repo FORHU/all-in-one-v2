@@ -1,5 +1,5 @@
 import { ProductsStatsBar } from "@/features/products/components/ProductsStatsBar";
-import { CollectionGrid } from "@/features/products/components/CollectionGrid";
+import { CollectionGrid } from "@/features/collections/components/CollectionGrid";
 
 export default function CollectionsPage() {
   return (

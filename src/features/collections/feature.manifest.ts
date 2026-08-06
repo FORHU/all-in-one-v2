@@ -5,9 +5,9 @@
  * It is a static declaration consumed by tools/validate-architecture.ts.
  */
 export const featureManifest = {
-  name: "products",
+  name: "collections",
   dependsOn: [] as const,
-  exposes: ["ProductsTable", "ProductsStatsBar", "BrandGrid"] as const,
+  exposes: ["CollectionGrid", "useCollections"] as const,
 } as const;
 
-export type ProductsManifest = typeof featureManifest;
+export type CollectionsManifest = typeof featureManifest;

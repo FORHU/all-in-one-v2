@@ -254,34 +254,3 @@ export const BRANDS = [
     tileColor: "#c97b86",
   },
 ];
-
-export const COLLECTIONS = [
-  {
-    name: "Autumn Capsule",
-    count: 18,
-    status: "Live",
-    swatchA: "#c9a97a",
-    swatchB: "#a8845a",
-  },
-  {
-    name: "Desk & Studio",
-    count: 11,
-    status: "Live",
-    swatchA: "#9fb0a6",
-    swatchB: "#7c8f82",
-  },
-  {
-    name: "Weekend Carry",
-    count: 14,
-    status: "Scheduled",
-    swatchA: "#d8cdb8",
-    swatchB: "#bfae90",
-  },
-  {
-    name: "Minimal Essentials",
-    count: 26,
-    status: "Live",
-    swatchA: "#40465a",
-    swatchB: "#2b2f3d",
-  },
-];

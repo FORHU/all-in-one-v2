@@ -43,6 +43,8 @@ yarn-error.log*
 # local-only reference docs, not meant for the shared repo
 /PRODUCT.md
 /docs/Framework-Structure/api-guide.md
+/docs/Framework-Structure/supplier-import-walkthrough.md
+/schema/
 
 # typescript
 *.tsbuildinfo

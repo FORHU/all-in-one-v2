@@ -32,12 +32,20 @@ export default function CustomersPage() {
     isActive: statusFilter === "all" ? undefined : statusFilter === "Active",
   });
 
-  // Confirmed via DevTools: the backend accepts `role` but doesn't apply it —
-  // GET /api/v2/users?role=USER still returns ADMIN/DEVELOPER accounts. Kept
-  // in the request in case the backend starts honoring it, but the client
-  // filter stays as a required backstop, not a defensive extra.
+  // Confirmed against the backend source (user.controller.ts /
+  // user.service.ts / user.repository.ts): `role` is parsed but never read
+  // by the controller, and `isActive` isn't wired anywhere in this endpoint
+  // at all — only `search`/`page`/`limit`/`sortBy`/`sortOrder` are real.
+  // Both filters below are required backstops, not defensive extras, until
+  // the backend adds them. `search` is NOT re-filtered here — it's genuinely
+  // applied server-side via a Prisma OR on email/username/name.
   const customerAccounts = data?.items
     .filter((u) => u.role === "USER")
+    .filter((u) =>
+      statusFilter === "all"
+        ? true
+        : u.isActive === (statusFilter === "Active"),
+    )
     .map((u) => ({
       id: u.id,
       name: u.name ?? u.username,
@@ -75,6 +83,10 @@ export default function CustomersPage() {
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         page={page}
+        // Also imprecise: totalPages is computed backend-side from every
+        // role/status, not customers-only, since neither filter is applied
+        // there. Next/Prev can undercount or overcount actual customer
+        // pages until the backend supports these filters.
         totalPages={data?.totalPages ?? 1}
         onPageChange={setPage}
       />

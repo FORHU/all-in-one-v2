@@ -27,3 +27,12 @@ export function initials(name: string): string {
   const second = words[1]?.[0] ?? "";
   return (first + second).toUpperCase();
 }
+
+// The API only exposes the supplier's kebab-case id (e.g. "cj-dropshipping")
+// — no display name field exists on the backend. Derive one for the UI.
+export function formatSupplierName(id: string): string {
+  return id
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}

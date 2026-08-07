@@ -32,29 +32,24 @@ export default function CustomersPage() {
     isActive: statusFilter === "all" ? undefined : statusFilter === "Active",
   });
 
-  // Confirmed against the backend source (user.controller.ts /
-  // user.service.ts / user.repository.ts): `role` is parsed but never read
-  // by the controller, and `isActive` isn't wired anywhere in this endpoint
-  // at all — only `search`/`page`/`limit`/`sortBy`/`sortOrder` are real.
-  // Both filters below are required backstops, not defensive extras, until
-  // the backend adds them. `search` is NOT re-filtered here — it's genuinely
-  // applied server-side via a Prisma OR on email/username/name.
-  const customerAccounts = data?.items
-    .filter((u) => u.role === "USER")
-    .filter((u) =>
-      statusFilter === "all"
-        ? true
-        : u.isActive === (statusFilter === "Active"),
-    )
-    .map((u) => ({
-      id: u.id,
-      name: u.name ?? u.username,
-      email: u.email,
-      isActive: u.isActive,
-      isEmailVerified: u.isEmailVerified,
-      lastLoginAt: u.lastLoginAt,
-      createdAt: u.createdAt,
-    }));
+  // `role` and `isActive` are sent to the backend as query params (see
+  // useUsers) and trusted at face value — no client-side re-filtering.
+  // Per review: the backend is the source of truth for these filters, not
+  // the frontend. Confirmed against the backend source (user.controller.ts /
+  // user.service.ts / user.repository.ts) that neither is actually applied
+  // there yet, so until that lands, this list may include non-USER roles
+  // and inactive accounts, and the status filter is a no-op. `search` is
+  // unaffected — it's genuinely applied server-side via a Prisma OR on
+  // email/username/name.
+  const customerAccounts = data?.items.map((u) => ({
+    id: u.id,
+    name: u.name ?? u.username,
+    email: u.email,
+    isActive: u.isActive,
+    isEmailVerified: u.isEmailVerified,
+    lastLoginAt: u.lastLoginAt,
+    createdAt: u.createdAt,
+  }));
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
@@ -70,10 +65,10 @@ export default function CustomersPage() {
       </div>
       <CustomersTable
         accounts={customerAccounts}
-        // `data.total` counts every role (the backend ignores our role
-        // filter), so it overcounts customers. Falling back to this page's
-        // filtered row count until the backend actually filters by role.
-        total={customerAccounts?.length ?? 0}
+        // Trusting the backend's count directly now — it may overcount
+        // until role/isActive filtering is implemented there (see comment
+        // above `customerAccounts`).
+        total={data?.total ?? 0}
         isLoading={isLoading}
         isError={isError}
         error={error}

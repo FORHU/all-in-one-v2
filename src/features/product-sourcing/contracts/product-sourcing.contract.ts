@@ -20,29 +20,63 @@ import { z } from "zod";
  * and import endpoints — the detail response's own `pid` is the same value,
  * just under a different key.
  */
+// CJ's `sellPrice` is usually a plain numeric string ("6.63"), but for
+// multi-variant products it's a range instead ("18.00 -- 20.90") —
+// confirmed by curling /product/listV2 directly, where ~1 in 8 results in
+// a real search comes back this way. `Number()` turns that into NaN, which
+// z.coerce.number() rejects, throwing for the *entire* result array over
+// one bad element. Take the low end of a range (the "from" price) and fall
+// back to undefined — never NaN — so one oddly-priced variant product
+// doesn't take down the whole search.
+function coercePrice(value: unknown): number | undefined {
+  if (typeof value === "number") return Number.isNaN(value) ? undefined : value;
+  if (typeof value !== "string") return undefined;
+  const low = value.split("--")[0]?.trim();
+  const n = Number(low);
+  return Number.isNaN(n) ? undefined : n;
+}
+
 export const SupplierSearchResultSchema = z.object({
   id: z.string(),
   nameEn: z.string().optional(),
   bigImage: z.string().optional(),
-  sellPrice: z.coerce.number().optional(),
+  sellPrice: z.preprocess(coercePrice, z.number().optional()),
   sku: z.string().optional(),
   categoryName: z.string().optional(),
 });
 
 export type SupplierSearchResult = z.infer<typeof SupplierSearchResultSchema>;
 
-/** GET /api/v2/suppliers/:supplierId/search */
+/**
+ * GET /api/v2/suppliers/:supplierId/search — { status, statusCode, data:
+ * { items, total, page, limit, totalPages } }. Matches the backend's
+ * generic PageResult wrapper (same shape as /v2/customers, /v2/users), not
+ * the bare array this endpoint used to return before the backend added
+ * real pagination.
+ */
+export const SupplierSearchPageSchema = z.object({
+  items: z.array(SupplierSearchResultSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number(),
+});
+
+export type SupplierSearchPage = z.infer<typeof SupplierSearchPageSchema>;
+
 export const SupplierSearchResponseSchema = z.object({
   status: z.string(),
   statusCode: z.number(),
-  data: z.array(SupplierSearchResultSchema),
+  data: SupplierSearchPageSchema,
 });
 
 export const SupplierProductDetailSchema = z.object({
   pid: z.string(),
   productNameEn: z.string().optional(),
   bigImage: z.string().optional(),
-  sellPrice: z.coerce.number().optional(),
+  // Same range-string quirk as SupplierSearchResultSchema.sellPrice — see
+  // coercePrice's comment above.
+  sellPrice: z.preprocess(coercePrice, z.number().optional()),
   productSku: z.string().optional(),
   categoryName: z.string().optional(),
   description: z.string().optional(),

@@ -7,7 +7,7 @@
 export const featureManifest = {
   name: "customers",
   dependsOn: [] as const,
-  exposes: ["CustomersTable"] as const,
+  exposes: ["CustomersTable", "useCustomers"] as const,
 } as const;
 
 export type CustomersManifest = typeof featureManifest;

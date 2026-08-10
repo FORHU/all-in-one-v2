@@ -3,19 +3,28 @@ import {
   SupplierSearchResponseSchema,
   SupplierProductDetailResponseSchema,
   ImportProductResponseSchema,
-  type SupplierSearchResult,
+  type SupplierSearchPage,
   type SupplierProductDetail,
   type ImportProductInput,
   type ImportedProduct,
 } from "../contracts/product-sourcing.contract";
 
-/** GET /api/v2/suppliers/:supplierId/search */
+/**
+ * GET /api/v2/suppliers/:supplierId/search — returns the whole page object
+ * (not just `items`), since `total`/`totalPages` are what the UI needs to
+ * render "page X of Y" pagination controls.
+ */
 export async function searchSupplierProducts(
   supplierId: string,
   query: string,
+  page = 1,
   limit = 10,
-): Promise<SupplierSearchResult[]> {
-  const qs = new URLSearchParams({ q: query, limit: String(limit) });
+): Promise<SupplierSearchPage> {
+  const qs = new URLSearchParams({
+    q: query,
+    page: String(page),
+    limit: String(limit),
+  });
   const raw = await fetcher<unknown>(
     `/api/v2/suppliers/${supplierId}/search?${qs}`,
   );

@@ -15,11 +15,14 @@ import { productSourcingKeys } from "../api/product-sourcing.keys";
 export const SOURCING_SUPPLIER_ID = "cj-dropshipping";
 
 /** Search the connected supplier's live catalog. No-ops on an empty query. */
-export function useSupplierSearch(query: string) {
+export function useSupplierSearch(query: string, page = 1) {
   return useSafeQuery({
-    queryKey: productSourcingKeys.search(SOURCING_SUPPLIER_ID, query),
-    queryFn: () => searchSupplierProducts(SOURCING_SUPPLIER_ID, query),
+    queryKey: productSourcingKeys.search(SOURCING_SUPPLIER_ID, query, page),
+    queryFn: () => searchSupplierProducts(SOURCING_SUPPLIER_ID, query, page),
     enabled: query.trim().length > 0,
+    // Keep showing the previous page's results while the next page loads,
+    // instead of flashing back to the loading skeleton on every page change.
+    placeholderData: (prev) => prev,
   });
 }
 

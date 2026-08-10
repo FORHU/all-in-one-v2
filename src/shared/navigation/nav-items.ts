@@ -91,16 +91,16 @@ export const STORE_NAV_ITEMS: NavItem[] = [
 ];
 
 // Shown while "Platform" is selected — super-admin-only, cross-tenant
-// concerns. Most store-scoped items (Products, Orders, ...) don't apply here
-// since there's no single tenant to operate on. Customers is the exception:
-// GET /api/v2/users has no tenant field at all (confirmed via the same
-// endpoint Staff & Roles reads from), so the account list is inherently
-// platform-wide, not scoped to whichever store is selected.
+// concerns. Store-scoped items (Products, Orders, Customers, ...) don't
+// apply here since there's no single tenant to operate on: GET
+// /api/v2/customers scopes its result to whichever tenant sends
+// x-tenant-slug, and no tenant is selected at platform scope. Staff & Roles
+// stays here because GET /api/v2/users (which it reads from) has no tenant
+// field — that account list is genuinely platform-wide.
 export const PLATFORM_NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon },
   { label: "Tenants", href: "/tenants", icon: Building2Icon },
   { label: "Staff & Roles", href: "/staff", icon: UserCogIcon },
-  { label: "Customers", href: "/customers", icon: UsersIcon },
   { label: "Activity Logs", href: "/activity-logs", icon: ScrollTextIcon },
   { label: "Settings", href: "/settings", icon: SettingsIcon },
 ];

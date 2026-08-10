@@ -10,6 +10,7 @@ import {
   RotateCw as RotateCwIcon,
 } from "lucide-react";
 import { notify } from "@/shared/lib/notify";
+import type { Customer } from "../contracts/customers.contract";
 import { CustomersStatsBar } from "./CustomersStatsBar";
 import { CustomersFilterBar } from "./CustomersFilterBar";
 import {
@@ -20,22 +21,8 @@ import {
   initials,
 } from "../lib/presentation";
 
-// Structurally matches features/users' `User` type without importing it —
-// features/customers can't depend on features/users directly (FAOS
-// boundary), so the app layer fetches real accounts, filters to the
-// customer-tier role, and passes them in as this locally-owned shape.
-export type CustomerAccount = {
-  id: string;
-  name: string;
-  email: string;
-  isActive: boolean;
-  isEmailVerified: boolean;
-  lastLoginAt: string | null;
-  createdAt: string;
-};
-
 type CustomersTableProps = {
-  accounts: CustomerAccount[] | undefined;
+  accounts: Customer[] | undefined;
   total: number;
   isLoading: boolean;
   isError: boolean;
@@ -75,6 +62,8 @@ export function CustomersTable({
         id: a.id,
         name: a.name,
         email: a.email,
+        phone: a.phone,
+        orderCount: a.orderCount,
         isEmailVerified: a.isEmailVerified,
         status: a.isActive ? ("Active" as const) : ("Inactive" as const),
         lastActive: formatLastActive(a.lastLoginAt),
@@ -99,10 +88,12 @@ export function CustomersTable({
       />
 
       <div className="overflow-hidden rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)]">
-        <div className="grid grid-cols-[2fr_2fr_1fr_1.1fr_1fr_1.2fr] items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-bg-soft)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
+        <div className="grid grid-cols-[1.8fr_1.7fr_1.2fr_0.8fr_0.7fr_0.9fr_0.9fr_1.1fr] items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-bg-soft)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
           <span>Customer</span>
           <span>Email</span>
+          <span>Phone</span>
           <span>Status</span>
+          <span>Orders</span>
           <span>Joined</span>
           <span>Last Active</span>
           <span />
@@ -159,7 +150,7 @@ export function CustomersTable({
             return (
               <div
                 key={c.id}
-                className="grid grid-cols-[2fr_2fr_1fr_1.1fr_1fr_1.2fr] items-center gap-3 border-b border-[var(--shop-border)] px-[18px] py-3.5 last:border-b-0"
+                className="grid grid-cols-[1.8fr_1.7fr_1.2fr_0.8fr_0.7fr_0.9fr_0.9fr_1.1fr] items-center gap-3 border-b border-[var(--shop-border)] px-[18px] py-3.5 last:border-b-0"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <div
@@ -184,6 +175,9 @@ export function CustomersTable({
                     />
                   )}
                 </div>
+                <span className="truncate text-xs text-[var(--shop-text-muted)]">
+                  {c.phone ?? "—"}
+                </span>
                 <span
                   className="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
                   style={{
@@ -196,6 +190,9 @@ export function CustomersTable({
                     style={{ background: statusStyle.color }}
                   />
                   {c.status}
+                </span>
+                <span className="text-xs text-[var(--shop-text-muted)]">
+                  {c.orderCount}
                 </span>
                 <span className="text-xs text-[var(--shop-text-muted)]">
                   {c.joined}

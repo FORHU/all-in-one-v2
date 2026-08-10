@@ -13,6 +13,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 export default function ToolsPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedExternalId, setSelectedExternalId] = useState<string | null>(
     null,
   );
@@ -24,11 +25,21 @@ export default function ToolsPage() {
     return () => clearTimeout(id);
   }, [query]);
 
+  // A changed search invalidates the current page number.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQuery]);
+
   const {
     data: results,
     isLoading: isSearching,
+    isFetching: isSearchFetching,
     isError: isSearchError,
-  } = useSupplierSearch(debouncedQuery);
+  } = useSupplierSearch(debouncedQuery, page);
+
+  // True in the gap between a keystroke and the debounced request actually
+  // firing, so the search input can show feedback with no dead gap.
+  const isDebouncePending = query !== debouncedQuery;
 
   const {
     data: detail,
@@ -52,9 +63,14 @@ export default function ToolsPage() {
       <SupplierProductSearch
         query={query}
         onQueryChange={setQuery}
-        results={results}
+        results={results?.items}
         isSearching={isSearching}
+        isSearchFetching={isSearchFetching}
+        isSearchPending={isDebouncePending}
         isSearchError={isSearchError}
+        page={page}
+        totalPages={results?.totalPages ?? 1}
+        onPageChange={setPage}
         selectedExternalId={selectedExternalId}
         onSelect={setSelectedExternalId}
         detail={detail}

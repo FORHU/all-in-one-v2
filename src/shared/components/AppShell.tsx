@@ -34,7 +34,7 @@ export function AppShell({
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
 
   return (
-    <div className="flex min-h-screen bg-[var(--shop-bg-soft)]">
+    <div className="flex h-dvh overflow-hidden bg-[var(--shop-bg-soft)]">
       <AppSidebar
         onLogout={onLogout}
         me={me}
@@ -45,8 +45,13 @@ export function AppShell({
         isTenantsLoading={isTenantsLoading}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 lg:hidden">
+      {/* overflow-hidden here (not just on <main>) so this column's height
+          stays clamped to the shell's h-dvh instead of growing to fit tall
+          page content — without it, the browser's automatic min-height for
+          flex items would still let the whole shell (and the sidebar with
+          it) push past the viewport and scroll as one document. */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 lg:hidden">
           <button
             type="button"
             onClick={toggleSidebar}
@@ -62,7 +67,7 @@ export function AppShell({
           ) : null}
         </header>
 
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-y-auto">
           <div
             key={selectedTenantSlug ?? "platform"}
             className="shop-content-fade"

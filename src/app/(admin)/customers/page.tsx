@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CustomersTable } from "@/features/customers/components/CustomersTable";
-import { useUsers } from "@/features/users/hooks/useUsers";
+import { useCustomers } from "@/features/customers/hooks/useCustomers";
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -24,29 +24,19 @@ export default function CustomersPage() {
     setPage(1);
   }, [debouncedSearch, statusFilter]);
 
-  const { data, isLoading, isError, error, refetch } = useUsers({
-    role: "USER",
+  // tenantSlug (and therefore this query, gated on it inside useCustomers)
+  // reads localStorage, which the server always sees as empty — gate on
+  // `mounted` so the first client render matches the server's, same pattern
+  // SupplierGrid/CollectionGrid use.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const { data, isLoading, isError, error, refetch } = useCustomers({
     page,
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
     isActive: statusFilter === "all" ? undefined : statusFilter === "Active",
   });
-
-  // Confirmed via DevTools: the backend accepts `role` but doesn't apply it —
-  // GET /api/v2/users?role=USER still returns ADMIN/DEVELOPER accounts. Kept
-  // in the request in case the backend starts honoring it, but the client
-  // filter stays as a required backstop, not a defensive extra.
-  const customerAccounts = data?.items
-    .filter((u) => u.role === "USER")
-    .map((u) => ({
-      id: u.id,
-      name: u.name ?? u.username,
-      email: u.email,
-      isActive: u.isActive,
-      isEmailVerified: u.isEmailVerified,
-      lastLoginAt: u.lastLoginAt,
-      createdAt: u.createdAt,
-    }));
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
@@ -56,17 +46,14 @@ export default function CustomersPage() {
             Customers
           </h2>
           <p className="mt-1 text-sm text-[var(--shop-text-muted)]">
-            View customer profiles and account activity across the platform.
+            View customer profiles and account activity for this store.
           </p>
         </div>
       </div>
       <CustomersTable
-        accounts={customerAccounts}
-        // `data.total` counts every role (the backend ignores our role
-        // filter), so it overcounts customers. Falling back to this page's
-        // filtered row count until the backend actually filters by role.
-        total={customerAccounts?.length ?? 0}
-        isLoading={isLoading}
+        accounts={data?.items}
+        total={data?.total ?? 0}
+        isLoading={!mounted || isLoading}
         isError={isError}
         error={error}
         onRetry={refetch}

@@ -4,12 +4,11 @@ import { useMemo, useState } from "react";
 import {
   AlertTriangle as AlertTriangleIcon,
   BadgeCheck as BadgeCheckIcon,
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
   MoreHorizontal as MoreHorizontalIcon,
   RotateCw as RotateCwIcon,
 } from "lucide-react";
 import { notify } from "@/shared/lib/notify";
+import { Pagination } from "@/shared/components/Pagination";
 import type { Customer } from "../contracts/customers.contract";
 import { CustomersStatsBar } from "./CustomersStatsBar";
 import { CustomersFilterBar } from "./CustomersFilterBar";
@@ -255,32 +254,12 @@ export function CustomersTable({
         )}
       </div>
 
-      {!isLoading && !isError && totalPages > 1 && (
-        <div className="mt-3.5 flex items-center justify-between">
-          <p className="text-xs text-[var(--shop-text-muted)]">
-            Page {page} of {totalPages}
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onPageChange(page - 1)}
-              disabled={page <= 1}
-              className="flex items-center gap-1 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ChevronLeftIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages}
-              className="flex items-center gap-1 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Next
-              <ChevronRightIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
-            </button>
-          </div>
-        </div>
+      {!isLoading && !isError && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+        />
       )}
     </div>
   );

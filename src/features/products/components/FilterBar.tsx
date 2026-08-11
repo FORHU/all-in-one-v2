@@ -1,29 +1,18 @@
 "use client";
 
-import { type Product } from "../data/mock-products";
+import type { ProductStatus } from "../contracts/products.contract";
 
-const STATUS_CHIPS: { key: "all" | Product["status"]; label: string }[] = [
+const STATUS_CHIPS: { key: "all" | ProductStatus; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "Active", label: "Active" },
-  { key: "Draft", label: "Draft" },
-  { key: "Out of stock", label: "Low / Out" },
-  { key: "Archived", label: "Archived" },
+  { key: "DRAFT", label: "Draft" },
+  { key: "READY", label: "Ready" },
+  { key: "PUBLISHED", label: "Published" },
+  { key: "ARCHIVED", label: "Archived" },
 ];
 
-// Cross-feature imports are blocked, so this comes from features/categories
-// via app/-level composition — ProductsTable receives it as a prop and
-// threads it down here rather than FilterBar importing useCategories itself.
-type FilterBarCategory = {
-  slug: string;
-  name: string;
-};
-
 type FilterBarProps = {
-  statusFilter: "all" | Product["status"];
-  onStatusFilterChange: (status: "all" | Product["status"]) => void;
-  categoryFilter: string;
-  onCategoryFilterChange: (category: string) => void;
-  categories: FilterBarCategory[];
+  statusFilter: "all" | ProductStatus;
+  onStatusFilterChange: (status: "all" | ProductStatus) => void;
   search: string;
   onSearchChange: (search: string) => void;
   resultsCount: number;
@@ -32,9 +21,6 @@ type FilterBarProps = {
 export function FilterBar({
   statusFilter,
   onStatusFilterChange,
-  categoryFilter,
-  onCategoryFilterChange,
-  categories,
   search,
   onSearchChange,
   resultsCount,
@@ -47,6 +33,7 @@ export function FilterBar({
           return (
             <button
               key={chip.key}
+              type="button"
               onClick={() => onStatusFilterChange(chip.key)}
               className="rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
               style={{
@@ -62,22 +49,10 @@ export function FilterBar({
       </div>
       <div className="flex items-center gap-2 text-xs text-[var(--shop-text-muted)]">
         <span>{resultsCount} results</span>
-        <select
-          value={categoryFilter}
-          onChange={(e) => onCategoryFilterChange(e.target.value)}
-          className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2.5 py-1.5 text-xs text-[var(--shop-text)] outline-none"
-        >
-          <option value="all">All categories</option>
-          {categories.map((cat) => (
-            <option key={cat.slug} value={cat.name}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
         <input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search products, SKU…"
+          placeholder="Search title or slug…"
           className="w-56 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-1.5 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]"
         />
       </div>

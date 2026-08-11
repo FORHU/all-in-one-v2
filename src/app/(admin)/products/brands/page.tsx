@@ -1,4 +1,3 @@
-import { ProductsStatsBar } from "@/features/products/components/ProductsStatsBar";
 import { BrandGrid } from "@/features/products/components/BrandGrid";
 
 export default function BrandsPage() {
@@ -12,7 +11,6 @@ export default function BrandsPage() {
           Manage product brands and labels.
         </p>
       </div>
-      <ProductsStatsBar />
       <BrandGrid />
     </div>
   );

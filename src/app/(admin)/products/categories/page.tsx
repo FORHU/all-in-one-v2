@@ -1,4 +1,3 @@
-import { ProductsStatsBar } from "@/features/products/components/ProductsStatsBar";
 import { CategoryGrid } from "@/features/categories/components/CategoryGrid";
 
 export default function CategoriesPage() {
@@ -12,7 +11,6 @@ export default function CategoriesPage() {
           Organize products into categories.
         </p>
       </div>
-      <ProductsStatsBar />
       <CategoryGrid />
     </div>
   );

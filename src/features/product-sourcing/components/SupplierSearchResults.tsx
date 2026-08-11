@@ -1,11 +1,7 @@
 "use client";
 
-import {
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
-  Loader2 as LoaderIcon,
-  Search as SearchIcon,
-} from "lucide-react";
+import { Loader2 as LoaderIcon, Search as SearchIcon } from "lucide-react";
+import { Pagination } from "@/shared/components/Pagination";
 import type { SupplierSearchResult } from "../contracts/product-sourcing.contract";
 import { formatPrice } from "../lib/presentation";
 
@@ -135,33 +131,12 @@ export function SupplierSearchResults({
         </div>
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-3.5 flex items-center justify-between">
-          <p className="text-xs text-[var(--shop-text-muted)]">
-            Page {page} of {totalPages}
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onPageChange(page - 1)}
-              disabled={page <= 1 || isFetching}
-              className="flex items-center gap-1 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ChevronLeftIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages || isFetching}
-              className="flex items-center gap-1 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Next
-              <ChevronRightIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+        disabled={isFetching}
+      />
     </div>
   );
 }

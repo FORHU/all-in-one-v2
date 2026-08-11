@@ -1,11 +1,11 @@
 "use client";
 
 import { X } from "lucide-react";
-import type { Product } from "../data/mock-products";
-import { STATUS_STYLES } from "../lib/presentation";
+import type { AdminProduct } from "../contracts/products.contract";
+import { STATUS_STYLES, formatMoney } from "../lib/presentation";
 
 type ProductQuickViewModalProps = {
-  product: Product;
+  product: AdminProduct;
   onClose: () => void;
 };
 
@@ -25,18 +25,22 @@ export function ProductQuickViewModal({
         className="max-h-[88vh] w-full max-w-[640px] overflow-auto rounded-2xl bg-[var(--shop-surface)]"
       >
         <div className="flex gap-5 border-b border-[var(--shop-border)] p-6">
-          <div
-            className="h-[88px] w-[88px] flex-shrink-0 rounded-xl"
-            style={{
-              background: `repeating-linear-gradient(45deg, ${product.swatchA}, ${product.swatchA} 5px, ${product.swatchB} 5px, ${product.swatchB} 10px)`,
-            }}
-          />
+          {product.thumbnailUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- product-hosted image, not a local asset next/image can optimize
+            <img
+              src={product.thumbnailUrl}
+              alt=""
+              className="h-[88px] w-[88px] flex-shrink-0 rounded-xl object-cover"
+            />
+          ) : (
+            <div className="h-[88px] w-[88px] flex-shrink-0 rounded-xl bg-[var(--shop-bg-soft)]" />
+          )}
           <div className="min-w-0 flex-1">
             <p className="shop-display mb-1 text-[19px] font-semibold text-[var(--shop-text)]">
-              {product.name}
+              {product.title}
             </p>
             <p className="mb-2 font-mono text-xs text-[var(--shop-text-muted)]">
-              {product.sku}
+              {product.slug}
             </p>
             <span
               className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
@@ -46,7 +50,7 @@ export function ProductQuickViewModal({
                 className="h-1.5 w-1.5 rounded-full"
                 style={{ background: statusStyle.color }}
               />
-              {product.status}
+              {statusStyle.label}
             </span>
           </div>
           <button
@@ -63,15 +67,20 @@ export function ProductQuickViewModal({
               Price
             </p>
             <p className="shop-display text-xl font-bold text-[var(--shop-text)]">
-              ${product.price.toFixed(2)}
+              {formatMoney(product.salePrice ?? product.price)}
             </p>
+            {product.salePrice !== null && product.price !== null && (
+              <p className="text-xs text-[var(--shop-text-muted)] line-through">
+                {formatMoney(product.price)}
+              </p>
+            )}
           </div>
           <div>
             <p className="mb-1 text-[10.5px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
               Category
             </p>
             <p className="text-sm font-semibold text-[var(--shop-text)]">
-              {product.category}
+              {product.category?.name ?? "—"}
             </p>
           </div>
           <div>
@@ -79,16 +88,7 @@ export function ProductQuickViewModal({
               Stock
             </p>
             <p className="text-sm font-semibold text-[var(--shop-text)]">
-              {product.stock} / {product.capacity} (
-              {Math.round((product.stock / product.capacity) * 100)}%)
-            </p>
-          </div>
-          <div>
-            <p className="mb-1 text-[10.5px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
-              Supplier
-            </p>
-            <p className="text-sm font-semibold text-[var(--shop-text)]">
-              {product.supplier}
+              {product.inStock ? "In stock" : "Out of stock"}
             </p>
           </div>
         </div>

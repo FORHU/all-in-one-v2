@@ -1,4 +1,3 @@
-import { ProductsStatsBar } from "@/features/products/components/ProductsStatsBar";
 import { CollectionGrid } from "@/features/collections/components/CollectionGrid";
 
 export default function CollectionsPage() {
@@ -12,7 +11,6 @@ export default function CollectionsPage() {
           Group products into curated collections.
         </p>
       </div>
-      <ProductsStatsBar />
       <CollectionGrid />
     </div>
   );

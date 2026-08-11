@@ -1,4 +1,4 @@
-import { BRANDS } from "../data/mock-products";
+import { BRANDS } from "../data/mock-brands";
 
 export function BrandGrid() {
   return (

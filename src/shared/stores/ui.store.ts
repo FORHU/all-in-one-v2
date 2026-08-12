@@ -7,6 +7,5 @@ type UIState = {
 
 export const useUIStore = create<UIState>((set) => ({
   sidebarOpen: false,
-  toggleSidebar: () =>
-    set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 }));

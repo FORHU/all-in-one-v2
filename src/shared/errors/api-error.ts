@@ -26,7 +26,7 @@ export class ApiError extends Error {
       status?: number;
       code?: string;
       details?: Record<string, string[]>;
-    }
+    },
   ) {
     super(message);
 

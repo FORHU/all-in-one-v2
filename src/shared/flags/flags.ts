@@ -5,4 +5,4 @@ export const FLAGS = {
 } as const;
 
 export type FlagKey = keyof typeof FLAGS;
-export type FlagValue = typeof FLAGS[FlagKey];
+export type FlagValue = (typeof FLAGS)[FlagKey];

@@ -2,7 +2,11 @@
 
 import { X } from "lucide-react";
 import type { AdminProduct } from "../contracts/products.contract";
-import { STATUS_STYLES, formatMoney } from "../lib/presentation";
+import {
+  STATUS_STYLES,
+  formatMoney,
+  resolveThumbnailUrl,
+} from "../lib/presentation";
 
 type ProductQuickViewModalProps = {
   product: AdminProduct;
@@ -14,6 +18,7 @@ export function ProductQuickViewModal({
   onClose,
 }: ProductQuickViewModalProps) {
   const statusStyle = STATUS_STYLES[product.status];
+  const thumbnailUrl = resolveThumbnailUrl(product.thumbnailUrl);
 
   return (
     <div
@@ -25,10 +30,10 @@ export function ProductQuickViewModal({
         className="max-h-[88vh] w-full max-w-[640px] overflow-auto rounded-2xl bg-[var(--shop-surface)]"
       >
         <div className="flex gap-5 border-b border-[var(--shop-border)] p-6">
-          {product.thumbnailUrl ? (
+          {thumbnailUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- product-hosted image, not a local asset next/image can optimize
             <img
-              src={product.thumbnailUrl}
+              src={thumbnailUrl}
               alt=""
               className="h-[88px] w-[88px] flex-shrink-0 rounded-xl object-cover"
             />

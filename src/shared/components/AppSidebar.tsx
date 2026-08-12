@@ -285,7 +285,7 @@ export function AppSidebar({
               </button>
 
               {tenantMenuOpen && (
-                <div className="shop-scope-fade absolute left-3 right-3 top-[calc(100%-4px)] z-50 max-h-72 overflow-y-auto rounded-md border border-white/10 bg-[var(--shop-ink-soft)] p-1 shadow-lg">
+                <div className="shop-scope-fade shop-scrollbar-dark absolute left-3 right-3 top-[calc(100%-4px)] z-50 max-h-72 overflow-y-auto rounded-md border border-white/10 bg-[var(--shop-ink-soft)] p-1 shadow-lg">
                   <button
                     type="button"
                     onClick={() =>
@@ -330,7 +330,7 @@ export function AppSidebar({
           ) : null}
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <nav className="shop-scrollbar-dark flex-1 overflow-y-auto px-3 py-4">
           <ul
             key={isPlatformScope ? "platform" : "store"}
             className="shop-scope-fade space-y-0.5"

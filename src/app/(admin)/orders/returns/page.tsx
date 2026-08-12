@@ -1,10 +1,7 @@
-import { PagePlaceholder } from "@/shared/components/PagePlaceholder";
+"use client";
+
+import { ReturnsListView } from "@/features/returns/components/ReturnsListView";
 
 export default function ReturnsPage() {
-  return (
-    <PagePlaceholder
-      title="Returns"
-      description="Handle return requests and refunds."
-    />
-  );
+  return <ReturnsListView />;
 }

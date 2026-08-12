@@ -10,7 +10,14 @@ export const featureManifest = {
   exposes: [
     "StatsCard",
     "RevenueChart",
-    "useDashboardStats",
+    "DateRangePicker",
+    "CategorySalesPanel",
+    "SupplierAnalyticsPanel",
+    "CustomerAnalyticsPanel",
+    "useDailySales",
+    "useCategorySales",
+    "useSupplierAnalytics",
+    "useCustomerAnalytics",
     "DashboardPanel",
   ] as const,
 } as const;

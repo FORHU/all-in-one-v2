@@ -6,6 +6,7 @@ import {
   STATUS_STYLES,
   VISIBILITY_LABELS,
   formatMoney,
+  resolveThumbnailUrl,
 } from "../lib/presentation";
 
 type ProductRowProps = {
@@ -33,6 +34,7 @@ export function ProductRow({
   const stockColor = product.inStock
     ? "var(--shop-success)"
     : "var(--shop-danger)";
+  const thumbnailUrl = resolveThumbnailUrl(product.thumbnailUrl);
 
   return (
     <div>
@@ -51,10 +53,10 @@ export function ProductRow({
           className="accent-[var(--shop-ink)]"
         />
         <div className="flex min-w-0 items-center gap-3">
-          {product.thumbnailUrl ? (
+          {thumbnailUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- product-hosted image, not a local asset next/image can optimize
             <img
-              src={product.thumbnailUrl}
+              src={thumbnailUrl}
               alt=""
               className="h-10 w-10 flex-shrink-0 rounded-lg object-cover"
             />

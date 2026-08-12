@@ -7,9 +7,14 @@ export interface PermissionContext {
   [key: string]: any;
 }
 
-type PermissionEvaluator = boolean | ((context: PermissionContext, user: any) => boolean);
+type PermissionEvaluator =
+  | boolean
+  | ((context: PermissionContext, user: any) => boolean);
 
-const rolePermissions: Record<Role, Partial<Record<Permission, PermissionEvaluator>>> = {
+const rolePermissions: Record<
+  Role,
+  Partial<Record<Permission, PermissionEvaluator>>
+> = {
   admin: {
     "posts:create": true,
     "posts:edit": true,
@@ -31,7 +36,7 @@ export function hasPermission(
   role: Role,
   permission: Permission,
   context?: PermissionContext,
-  user?: any
+  user?: any,
 ): boolean {
   const evaluator = rolePermissions[role]?.[permission];
   if (typeof evaluator === "function") {

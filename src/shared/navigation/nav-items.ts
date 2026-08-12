@@ -2,6 +2,7 @@ import {
   LayoutDashboard as LayoutDashboardIcon,
   Truck as TruckIcon,
   Package as PackageIcon,
+  Warehouse as WarehouseIcon,
   ShoppingCart as ShoppingCartIcon,
   Users as UsersIcon,
   Megaphone as MegaphoneIcon,
@@ -50,6 +51,16 @@ export const STORE_NAV_ITEMS: NavItem[] = [
       { label: "Categories", href: "/products/categories" },
       { label: "Brands", href: "/products/brands" },
       { label: "Collections", href: "/products/collections" },
+    ],
+  },
+  {
+    label: "Inventory",
+    href: "/inventory",
+    icon: WarehouseIcon,
+    children: [
+      { label: "Locations", href: "/inventory" },
+      { label: "Stock Lookup", href: "/inventory/stock" },
+      { label: "Transactions", href: "/inventory/transactions" },
     ],
   },
   {

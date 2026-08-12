@@ -1,10 +1,5 @@
-import { PagePlaceholder } from "@/shared/components/PagePlaceholder";
+import { SyncHistoryView } from "@/features/suppliers/components/SyncHistoryView";
 
 export default function SyncHistoryPage() {
-  return (
-    <PagePlaceholder
-      title="Sync History"
-      description="Review supplier sync runs and their status."
-    />
-  );
+  return <SyncHistoryView />;
 }

@@ -117,3 +117,26 @@
     animation: none;
   }
 }
+
+/* Thin translucent-white scrollbar for dark (--shop-ink) surfaces — the OS
+   default is a light track/thumb pair that reads as a rendering glitch
+   against navy. Recolors the native scrollbar only; doesn't replace the
+   underlying scroll affordance with a custom widget. */
+.shop-scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.shop-scrollbar-dark::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.shop-scrollbar-dark::-webkit-scrollbar-track {
+  background: transparent;
+}
+.shop-scrollbar-dark::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+}
+.shop-scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.32);
+}

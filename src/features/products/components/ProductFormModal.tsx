@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X as XIcon } from "lucide-react";
 import {
   useCreateProduct,
   useUpdateProduct,
@@ -188,7 +188,7 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
             aria-label="Close"
             className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-[var(--shop-bg)] text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
           >
-            <X className="h-3.5 w-3.5" />
+            <XIcon className="h-3.5 w-3.5" />
           </button>
         </div>
 

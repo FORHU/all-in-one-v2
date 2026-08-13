@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X as XIcon } from "lucide-react";
 
 type BulkToolbarProps = {
   selectedCount: number;
@@ -28,7 +28,7 @@ export function BulkToolbar({ selectedCount, onClear }: BulkToolbarProps) {
           aria-label="Clear selection"
           className="rounded-md px-2.5 py-1.5 text-xs text-white/50 hover:text-white"
         >
-          <X className="h-3.5 w-3.5" />
+          <XIcon className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

@@ -85,7 +85,12 @@ export function Dropdown({
         aria-label={ariaLabel}
         onClick={() => setOpen((v) => !v)}
         className={[
-          "relative z-50 flex w-full items-center gap-2 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] text-left font-semibold text-[var(--shop-text)] shadow-sm transition",
+          // z-index only elevated while open — otherwise a closed trigger
+          // (fixed z-50 regardless of state) would render on top of a
+          // DIFFERENT, currently-open dropdown's panel that overlaps it,
+          // since equal z-index ties break by DOM order.
+          "relative flex w-full items-center gap-2 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] text-left font-semibold text-[var(--shop-text)] shadow-sm transition",
+          open ? "z-50" : "z-10",
           "hover:border-[var(--shop-ink)]/25 disabled:cursor-not-allowed disabled:opacity-50",
           styles.trigger,
         ].join(" ")}

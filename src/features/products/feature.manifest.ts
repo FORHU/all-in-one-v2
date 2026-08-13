@@ -7,7 +7,15 @@
 export const featureManifest = {
   name: "products",
   dependsOn: [] as const,
-  exposes: ["ProductsTable", "ProductsStatsBar", "BrandGrid"] as const,
+  exposes: [
+    "ProductsTable",
+    "ProductsStatsBar",
+    "BrandGrid",
+    "ProductFormModal",
+    "useCreateProduct",
+    "useUpdateProduct",
+    "useDeleteProduct",
+  ] as const,
 } as const;
 
 export type ProductsManifest = typeof featureManifest;

@@ -52,9 +52,17 @@ export const CollectionSchema: z.ZodType<Collection> = z.lazy(() =>
   }),
 );
 
-/** GET /api/v2/collections — requires x-tenant-slug, attached by http.ts. */
+/** GET /api/v2/collections — { status, statusCode, data: { items, total, page, limit, totalPages } }. */
 export const CollectionsResponseSchema = z.object({
   status: z.string(),
   statusCode: z.number(),
-  data: z.array(CollectionSchema),
+  data: z.object({
+    items: z.array(CollectionSchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    totalPages: z.number(),
+  }),
 });
+
+export type CollectionsPage = z.infer<typeof CollectionsResponseSchema>["data"];

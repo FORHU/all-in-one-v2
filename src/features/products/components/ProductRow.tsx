@@ -2,6 +2,7 @@
 
 import { ChevronDown, MoreHorizontal } from "lucide-react";
 import type { AdminProduct } from "../contracts/products.contract";
+import { useUpdateProduct } from "../hooks/useProducts";
 import {
   STATUS_STYLES,
   VISIBILITY_LABELS,
@@ -18,6 +19,7 @@ type ProductRowProps = {
   onToggleExpand: () => void;
   onToggleMenu: () => void;
   onQuickView: () => void;
+  onEdit: () => void;
 };
 
 export function ProductRow({
@@ -29,7 +31,11 @@ export function ProductRow({
   onToggleExpand,
   onToggleMenu,
   onQuickView,
+  onEdit,
 }: ProductRowProps) {
+  const { mutate: archiveProduct, isPending: isArchiving } = useUpdateProduct(
+    product.id,
+  );
   const statusStyle = STATUS_STYLES[product.status];
   const stockColor = product.inStock
     ? "var(--shop-success)"
@@ -132,14 +138,25 @@ export function ProductRow({
               >
                 Quick view
               </button>
-              <button className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]">
+              <button
+                onClick={onEdit}
+                className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]"
+              >
                 Edit
               </button>
               <button className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]">
                 Duplicate
               </button>
-              <button className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-accent-dark)] hover:bg-[var(--shop-accent)]/10">
-                Archive
+              <button
+                onClick={() => archiveProduct({ status: "ARCHIVED" })}
+                disabled={product.status === "ARCHIVED" || isArchiving}
+                className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-accent-dark)] hover:bg-[var(--shop-accent)]/10 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {product.status === "ARCHIVED"
+                  ? "Archived"
+                  : isArchiving
+                    ? "Archiving…"
+                    : "Archive"}
               </button>
             </div>
           )}

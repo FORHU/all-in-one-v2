@@ -56,7 +56,14 @@ export const AdminProductSchema = z.object({
   updatedAt: z.string(),
 });
 
-/** GET /api/v2/products/admin — { status, statusCode, data: { items, total, page, limit, totalPages } }. */
+export const StatusCountsSchema = z.object({
+  DRAFT: z.number(),
+  READY: z.number(),
+  PUBLISHED: z.number(),
+  ARCHIVED: z.number(),
+});
+
+/** GET /api/v2/products/admin — { status, statusCode, data: { items, total, page, limit, totalPages, statusCounts } }. */
 export const AdminProductsResponseSchema = z.object({
   status: z.string(),
   statusCode: z.number(),
@@ -66,6 +73,41 @@ export const AdminProductsResponseSchema = z.object({
     page: z.number(),
     limit: z.number(),
     totalPages: z.number(),
+    // Catalog-wide status breakdown — unfiltered by the current
+    // search/status query params, so the stats bar stays stable while the
+    // table below it is filtered.
+    statusCounts: StatusCountsSchema,
+  }),
+});
+
+/**
+ * POST/PUT /api/v2/products(/:id) — the backend re-fetches the written row
+ * through the same admin-listing shape and mapper, so create/update responses
+ * are AdminProductSchema-shaped just like a row from the list endpoint.
+ */
+export const AdminProductResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: AdminProductSchema,
+});
+
+export const CategoryOptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+/**
+ * GET /api/v2/categories now returns a paginated envelope (see
+ * categories.contract.ts's CategoriesResponseSchema) — this narrows it down
+ * to just the {id, name} pairs a <select> needs, ignoring the pagination
+ * metadata. `getCategoriesForSelect` requests a high limit so the dropdown
+ * isn't silently truncated to the default page size.
+ */
+export const CategoryOptionsResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(CategoryOptionSchema),
   }),
 });
 
@@ -75,3 +117,5 @@ export type AdminProduct = z.infer<typeof AdminProductSchema>;
 export type AdminProductsPage = z.infer<
   typeof AdminProductsResponseSchema
 >["data"];
+export type CategoryOption = z.infer<typeof CategoryOptionSchema>;
+export type StatusCounts = z.infer<typeof StatusCountsSchema>;

@@ -9,12 +9,7 @@ import { useTenants } from "../hooks/useTenants";
 import { TenantsTableSkeleton } from "./TenantsTableSkeleton";
 import { TenantsStatsBar } from "./TenantsStatsBar";
 import { TenantsFilterBar } from "./TenantsFilterBar";
-import {
-  avatarColor,
-  initials,
-  mockProductCount,
-  statusStyle,
-} from "../lib/presentation";
+import { avatarColor, initials, statusStyle } from "../lib/presentation";
 
 export function TenantsTable() {
   const router = useRouter();
@@ -140,7 +135,7 @@ export function TenantsTable() {
                   {t.domain}
                 </span>
                 <span className="text-sm font-semibold text-[var(--shop-text)]">
-                  {mockProductCount(t.id)}
+                  {t.productCount}
                 </span>
                 <span
                   className="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold"

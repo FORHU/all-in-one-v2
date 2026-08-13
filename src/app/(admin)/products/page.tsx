@@ -16,6 +16,8 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | ProductStatus>(
     "all",
   );
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [brandFilter, setBrandFilter] = useState("");
 
   // Debounce free-text search so we don't fire a request per keystroke.
   useEffect(() => {
@@ -26,20 +28,35 @@ export default function ProductsPage() {
   // A changed filter invalidates the current page number.
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, statusFilter]);
+  }, [debouncedSearch, statusFilter, categoryFilter, brandFilter]);
 
   // tenantSlug (and therefore this query, gated on it inside
   // useAdminProducts) reads localStorage, which the server always sees as
   // empty — gate on `mounted` so the first client render matches the
   // server's, same pattern SupplierGrid/CollectionGrid/Customers use.
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    // Picks up `?categoryId=`/`?brand=` set by a click-through link (e.g.
+    // CategoryDetailView's "View products" link, or a BrandGrid tile).
+    // Read directly off window.location rather than useSearchParams — that
+    // hook forces this page out of static rendering and requires a
+    // Suspense boundary; a plain read inside this mount effect avoids both
+    // for a one-time initial value.
+    const params = new URLSearchParams(window.location.search);
+    const initialCategoryId = params.get("categoryId");
+    const initialBrand = params.get("brand");
+    if (initialCategoryId) setCategoryFilter(initialCategoryId);
+    if (initialBrand) setBrandFilter(initialBrand);
+  }, []);
 
   const { data, isLoading, isError, error, refetch } = useAdminProducts({
     page,
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
     status: statusFilter === "all" ? undefined : statusFilter,
+    categoryId: categoryFilter || undefined,
+    brand: brandFilter || undefined,
   });
 
   return (
@@ -68,6 +85,10 @@ export default function ProductsPage() {
         onSearchChange={setSearch}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        categoryFilter={categoryFilter}
+        onCategoryFilterChange={setCategoryFilter}
+        brandFilter={brandFilter}
+        onBrandFilterChange={setBrandFilter}
         page={page}
         totalPages={data?.totalPages ?? 1}
         onPageChange={setPage}

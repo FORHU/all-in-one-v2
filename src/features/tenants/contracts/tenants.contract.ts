@@ -17,6 +17,10 @@ export const TenantSchema = z.object({
     .optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  // Non-deleted product count for this tenant, computed server-side
+  // (tenant.service.ts's attachProductCounts) — there's no such column on
+  // the Tenant model itself.
+  productCount: z.number(),
 });
 
 export type Tenant = z.infer<typeof TenantSchema>;

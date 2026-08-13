@@ -49,24 +49,6 @@ export const CategoriesResponseSchema = z.object({
 
 export type CategoriesPage = z.infer<typeof CategoriesResponseSchema>["data"];
 
-/**
- * GET /api/v2/categories/:slug embeds products assigned directly to that
- * category (not rolled up from children). This is a local, minimal view of
- * a product — the full product contract belongs to a future products
- * feature, not here. `.passthrough()` tolerates extra fields we don't read.
- */
-export const CategoryProductSchema = z
-  .object({
-    id: z.string(),
-    title: z.string(),
-    slug: z.string(),
-    thumbnailUrl: z.string().nullable().optional(),
-    price: z.string().optional(),
-  })
-  .passthrough();
-
-export type CategoryProduct = z.infer<typeof CategoryProductSchema>;
-
 export const CategoryDetailSchema = z.object({
   id: z.string(),
   tenantId: z.string(),
@@ -78,7 +60,10 @@ export const CategoryDetailSchema = z.object({
   updatedAt: z.string(),
   parent: CategorySchema.nullable().optional(),
   children: z.array(CategorySchema).default([]),
-  products: z.array(CategoryProductSchema).default([]),
+  // Server-computed (category.service.ts's getCategoryBySlug), not a raw
+  // product listing — the detail page links out to the admin products
+  // table (filtered by this category) rather than rendering products here.
+  productCount: z.number(),
 });
 
 export type CategoryDetail = z.infer<typeof CategoryDetailSchema>;
@@ -87,4 +72,17 @@ export const CategoryDetailResponseSchema = z.object({
   status: z.string(),
   statusCode: z.number(),
   data: CategoryDetailSchema,
+});
+
+/**
+ * POST/PUT /api/v2/categories(/:id) — the backend returns the raw category
+ * row. `update` re-fetches through `findById` (parent/children included);
+ * `create` returns the bare created row with no `children` relation at all,
+ * which is why CategorySchema's `children` field falls back to
+ * `.default([])` rather than being required.
+ */
+export const CategoryResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: CategorySchema,
 });

@@ -34,7 +34,18 @@ export default function AdminLayout({
   const setRole = useAuthStore((s) => s.setRole);
   const { data: me, isLoading: isMeLoading } = useMe();
 
-  const { data: tenants, isLoading: isTenantsLoading } = useTenants();
+  // GET /tenants/all (behind useTenants) requires platform:manage, which
+  // only SUPER_ADMIN/DEVELOPER accounts hold — checked against the raw API
+  // role, not the coarsened client RBAC `Role` (which maps ADMIN to the same
+  // "admin" tier as SUPER_ADMIN/DEVELOPER and would over-grant this). Every
+  // other role is scoped to one tenant and has no use for a store switcher,
+  // so the query is skipped entirely rather than firing and 403ing on every
+  // admin page load.
+  const isPlatformAdmin =
+    me?.role === "SUPER_ADMIN" || me?.role === "DEVELOPER";
+  const { data: tenants, isLoading: isTenantsLoading } = useTenants({
+    enabled: isPlatformAdmin,
+  });
   const tenantSlug = useTenantStore((s) => s.tenantSlug);
   const setTenantSlug = useTenantStore((s) => s.setTenantSlug);
 

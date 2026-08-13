@@ -2,6 +2,7 @@ import { fetcher } from "@/shared/lib/http";
 import {
   CategoriesResponseSchema,
   CategoryDetailResponseSchema,
+  CategoryResponseSchema,
   type CategoriesPage,
   type CategoryDetail,
 } from "../contracts/categories.contract";
@@ -36,4 +37,41 @@ export async function getCategoryBySlug(slug: string): Promise<CategoryDetail> {
     `/api/v2/categories/${encodeURIComponent(slug)}`,
   );
   return CategoryDetailResponseSchema.parse(raw).data;
+}
+
+export type CategoryWriteInput = {
+  name: string;
+  // Required, not derived server-side — unlike products, CategoryService
+  // has no slugify-from-name fallback, so callers must always send one.
+  slug: string;
+  // Nullable, not just optional: an explicit `null` clears the description
+  // on an existing category. `undefined` is dropped by JSON.stringify
+  // before the request is sent, so it can't express "clear this".
+  description?: string | null;
+};
+
+/** POST /api/v2/categories — admin-only (catalog:write). */
+export async function createCategory(input: CategoryWriteInput) {
+  const raw = await fetcher<unknown>("/api/v2/categories", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return CategoryResponseSchema.parse(raw).data;
+}
+
+/** PUT /api/v2/categories/:id — admin-only (catalog:write). */
+export async function updateCategory(
+  id: string,
+  input: Partial<CategoryWriteInput>,
+) {
+  const raw = await fetcher<unknown>(`/api/v2/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+  return CategoryResponseSchema.parse(raw).data;
+}
+
+/** DELETE /api/v2/categories/:id — admin-only (catalog:delete). */
+export async function deleteCategory(id: string) {
+  await fetcher<unknown>(`/api/v2/categories/${id}`, { method: "DELETE" });
 }

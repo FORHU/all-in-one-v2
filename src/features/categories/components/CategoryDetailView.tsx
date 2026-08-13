@@ -2,9 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  Pencil as PencilIcon,
+  ArrowLeft as ArrowLeftIcon,
+  ArrowRight as ArrowRightIcon,
+} from "lucide-react";
 import { useCategory } from "../hooks/useCategory";
 import { CategoryCard } from "./CategoryCard";
 import { CategoryGridSkeleton } from "./CategoryGridSkeleton";
+import { CategoryFormModal } from "./CategoryFormModal";
+import type { Category } from "../contracts/categories.contract";
 
 export function CategoryDetailView({ slug }: { slug: string }) {
   // Same tenantSlug/localStorage hydration hazard as CategoryGrid.
@@ -12,6 +19,7 @@ export function CategoryDetailView({ slug }: { slug: string }) {
   useEffect(() => setMounted(true), []);
 
   const { data: category, isLoading, error, refetch } = useCategory(slug);
+  const [editing, setEditing] = useState<Category | null>(null);
 
   if (!mounted || isLoading) {
     return <CategoryGridSkeleton />;
@@ -52,8 +60,6 @@ export function CategoryDetailView({ slug }: { slug: string }) {
     );
   }
 
-  const productCount = category.products.length;
-
   return (
     <div>
       <Link
@@ -62,18 +68,38 @@ export function CategoryDetailView({ slug }: { slug: string }) {
             ? `/products/categories/${category.parent.slug}`
             : "/products/categories"
         }
-        className="mb-4 inline-block text-xs font-medium text-[var(--shop-text-muted)] hover:text-[var(--shop-accent)]"
+        className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3.5 py-2 text-[11.5px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)] transition hover:bg-[var(--shop-bg)] hover:text-[var(--shop-text)]"
       >
-        ← {category.parent ? category.parent.name : "All categories"}
+        <ArrowLeftIcon className="h-3 w-3" strokeWidth={2.5} />
+        {category.parent ? category.parent.name : "All categories"}
       </Link>
 
-      <div className="mb-6">
-        <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
-          {category.name}
-        </h2>
-        <p className="mt-1 text-sm text-[var(--shop-text-muted)]">
-          {productCount} product{productCount === 1 ? "" : "s"} in this category
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
+            {category.name}
+          </h2>
+          <p className="mb-3 mt-1 text-sm text-[var(--shop-text-muted)]">
+            {category.productCount} product
+            {category.productCount === 1 ? "" : "s"} in this category
+          </p>
+          <Link
+            href={`/products?categoryId=${category.id}`}
+            className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[11.5px] font-bold uppercase tracking-wide text-white transition hover:brightness-90"
+            style={{ backgroundColor: "var(--shop-accent-dark)" }}
+          >
+            View products
+            <ArrowRightIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </Link>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing(category)}
+          className="flex items-center gap-1.5 rounded-full border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3.5 py-2 text-[11.5px] font-bold uppercase tracking-wide text-[var(--shop-text)] transition hover:bg-[var(--shop-bg)]"
+        >
+          <PencilIcon className="h-3 w-3" strokeWidth={2.5} />
+          Edit
+        </button>
       </div>
 
       {category.children.length === 0 ? (
@@ -85,9 +111,16 @@ export function CategoryDetailView({ slug }: { slug: string }) {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {category.children.map((c) => (
-            <CategoryCard key={c.id} category={c} />
+            <CategoryCard key={c.id} category={c} onEdit={setEditing} />
           ))}
         </div>
+      )}
+
+      {editing && (
+        <CategoryFormModal
+          category={editing}
+          onClose={() => setEditing(null)}
+        />
       )}
     </div>
   );

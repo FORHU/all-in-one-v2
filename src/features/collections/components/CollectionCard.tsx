@@ -1,11 +1,24 @@
-import { ImageOff as ImageOffIcon } from "lucide-react";
+import { ImageOff as ImageOffIcon, Pencil as PencilIcon } from "lucide-react";
 import type { Collection } from "../contracts/collections.contract";
 
-export function CollectionCard({ collection }: { collection: Collection }) {
+type CollectionCardProps = {
+  collection: Collection;
+  onEdit: (collection: Collection) => void;
+};
+
+export function CollectionCard({ collection, onEdit }: CollectionCardProps) {
   const childCount = collection.children.length;
 
   return (
-    <div className="cursor-pointer overflow-hidden rounded-2xl border border-[var(--shop-border)] bg-[var(--shop-surface)] transition-all hover:-translate-y-0.5 hover:shadow-lg">
+    <div className="group relative overflow-hidden rounded-2xl border border-[var(--shop-border)] bg-[var(--shop-surface)] transition-all hover:-translate-y-0.5 hover:shadow-lg">
+      <button
+        type="button"
+        onClick={() => onEdit(collection)}
+        aria-label={`Edit ${collection.title}`}
+        className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-[var(--shop-border)] bg-[var(--shop-surface)]/90 text-[var(--shop-text-muted)] opacity-0 shadow-sm backdrop-blur transition hover:text-[var(--shop-accent)] focus-visible:opacity-100 group-hover:opacity-100"
+      >
+        <PencilIcon className="h-3.5 w-3.5" />
+      </button>
       <div className="relative flex h-[140px] items-center justify-center overflow-hidden bg-[color-mix(in_srgb,var(--shop-ink)_6%,var(--shop-surface))]">
         {collection.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- external supplier/tenant-hosted URL, not a local asset next/image can optimize

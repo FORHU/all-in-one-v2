@@ -15,6 +15,8 @@ export const featureManifest = {
     "useCreateProduct",
     "useUpdateProduct",
     "useDeleteProduct",
+    "useBrandCounts",
+    "useRenameBrand",
   ] as const,
 } as const;
 

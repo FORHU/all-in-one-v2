@@ -111,6 +111,33 @@ export const CategoryOptionsResponseSchema = z.object({
   }),
 });
 
+export const BrandCountSchema = z.object({
+  brand: z.string(),
+  count: z.number(),
+});
+
+/**
+ * GET /api/v2/products/brands — brand has no table of its own (just a
+ * `brand: string | null` column on each product), so this is a distinct
+ * value + count breakdown, not a row listing. Backs the admin Brands page.
+ */
+export const BrandCountsResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(BrandCountSchema),
+  }),
+});
+
+/** PATCH /api/v2/products/brands/:brand — bulk rename/clear response. */
+export const RenameBrandResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    updatedCount: z.number(),
+  }),
+});
+
 export type ProductStatus = z.infer<typeof ProductStatusSchema>;
 export type ProductVisibility = z.infer<typeof ProductVisibilitySchema>;
 export type AdminProduct = z.infer<typeof AdminProductSchema>;
@@ -119,3 +146,4 @@ export type AdminProductsPage = z.infer<
 >["data"];
 export type CategoryOption = z.infer<typeof CategoryOptionSchema>;
 export type StatusCounts = z.infer<typeof StatusCountsSchema>;
+export type BrandCount = z.infer<typeof BrandCountSchema>;

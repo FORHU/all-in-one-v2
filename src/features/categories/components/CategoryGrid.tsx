@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Pagination } from "@/shared/components/Pagination";
 import { useCategories } from "../hooks/useCategories";
 import { CategoryCard } from "./CategoryCard";
 import { CategoryGridSkeleton } from "./CategoryGridSkeleton";
+
+const PAGE_SIZE = 24;
 
 export function CategoryGrid() {
   // tenantSlug (and therefore this query) reads localStorage, which the
@@ -12,7 +15,11 @@ export function CategoryGrid() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const { data: categories, isLoading, error, refetch } = useCategories();
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error, refetch } = useCategories({
+    page,
+    limit: PAGE_SIZE,
+  });
 
   if (!mounted || isLoading) {
     return <CategoryGridSkeleton />;
@@ -39,7 +46,7 @@ export function CategoryGrid() {
     );
   }
 
-  const topLevel = (categories ?? []).filter((c) => c.parentId === null);
+  const topLevel = (data?.items ?? []).filter((c) => c.parentId === null);
 
   if (topLevel.length === 0) {
     return (
@@ -52,10 +59,17 @@ export function CategoryGrid() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {topLevel.map((c) => (
-        <CategoryCard key={c.id} category={c} />
-      ))}
+    <div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {topLevel.map((c) => (
+          <CategoryCard key={c.id} category={c} />
+        ))}
+      </div>
+      <Pagination
+        page={data?.page ?? 1}
+        totalPages={data?.totalPages ?? 1}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

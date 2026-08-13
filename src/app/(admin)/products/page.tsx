@@ -54,6 +54,7 @@ export default function ProductsPage() {
       </div>
       <ProductsStatsBar
         total={data?.total ?? 0}
+        statusCounts={data?.statusCounts}
         isLoading={!mounted || isLoading}
       />
       <ProductsTable

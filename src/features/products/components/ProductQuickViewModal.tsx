@@ -11,11 +11,13 @@ import {
 type ProductQuickViewModalProps = {
   product: AdminProduct;
   onClose: () => void;
+  onEdit: () => void;
 };
 
 export function ProductQuickViewModal({
   product,
   onClose,
+  onEdit,
 }: ProductQuickViewModalProps) {
   const statusStyle = STATUS_STYLES[product.status];
   const thumbnailUrl = resolveThumbnailUrl(product.thumbnailUrl);
@@ -98,7 +100,10 @@ export function ProductQuickViewModal({
           </div>
         </div>
         <div className="flex gap-2.5 p-6 pt-0">
-          <button className="flex-1 rounded-lg bg-[var(--shop-ink)] py-2.5 text-[13px] font-bold text-[var(--shop-bg)] hover:bg-[var(--shop-ink-soft)]">
+          <button
+            onClick={onEdit}
+            className="flex-1 rounded-lg bg-[var(--shop-ink)] py-2.5 text-[13px] font-bold text-[var(--shop-bg)] hover:bg-[var(--shop-ink-soft)]"
+          >
             Edit product
           </button>
           <button

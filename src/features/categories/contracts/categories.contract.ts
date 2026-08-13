@@ -34,11 +34,20 @@ export const CategorySchema: z.ZodType<Category> = z.lazy(() =>
   }),
 );
 
+/** GET /api/v2/categories — { status, statusCode, data: { items, total, page, limit, totalPages } }. */
 export const CategoriesResponseSchema = z.object({
   status: z.string(),
   statusCode: z.number(),
-  data: z.array(CategorySchema),
+  data: z.object({
+    items: z.array(CategorySchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    totalPages: z.number(),
+  }),
 });
+
+export type CategoriesPage = z.infer<typeof CategoriesResponseSchema>["data"];
 
 /**
  * GET /api/v2/categories/:slug embeds products assigned directly to that

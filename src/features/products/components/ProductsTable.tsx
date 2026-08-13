@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   AlertTriangle as AlertTriangleIcon,
+  Plus as PlusIcon,
   RotateCw as RotateCwIcon,
 } from "lucide-react";
 import { Pagination } from "@/shared/components/Pagination";
@@ -14,6 +15,7 @@ import { FilterBar } from "./FilterBar";
 import { BulkToolbar } from "./BulkToolbar";
 import { ProductRow } from "./ProductRow";
 import { ProductQuickViewModal } from "./ProductQuickViewModal";
+import { ProductFormModal } from "./ProductFormModal";
 
 type ProductsTableProps = {
   products: AdminProduct[] | undefined;
@@ -50,6 +52,9 @@ export function ProductsTable({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [quickView, setQuickView] = useState<AdminProduct | null>(null);
+  const [formModal, setFormModal] = useState<
+    { mode: "create" } | { mode: "edit"; product: AdminProduct } | null
+  >(null);
 
   const rows = products ?? [];
   const selectedCount = Object.values(selected).filter(Boolean).length;
@@ -65,6 +70,18 @@ export function ProductsTable({
 
   return (
     <div>
+      <div className="mb-3.5 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setFormModal({ mode: "create" })}
+          className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[11.5px] font-bold uppercase tracking-wide text-white transition hover:brightness-90"
+          style={{ backgroundColor: "var(--shop-accent-dark)" }}
+        >
+          <PlusIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
+          Add product
+        </button>
+      </div>
+
       <FilterBar
         statusFilter={statusFilter}
         onStatusFilterChange={onStatusFilterChange}
@@ -155,6 +172,10 @@ export function ProductsTable({
                 setQuickView(p);
                 setOpenMenu(null);
               }}
+              onEdit={() => {
+                setFormModal({ mode: "edit", product: p });
+                setOpenMenu(null);
+              }}
             />
           ))
         )}
@@ -172,6 +193,17 @@ export function ProductsTable({
         <ProductQuickViewModal
           product={quickView}
           onClose={() => setQuickView(null)}
+          onEdit={() => {
+            setFormModal({ mode: "edit", product: quickView });
+            setQuickView(null);
+          }}
+        />
+      )}
+
+      {formModal && (
+        <ProductFormModal
+          product={formModal.mode === "edit" ? formModal.product : undefined}
+          onClose={() => setFormModal(null)}
         />
       )}
     </div>

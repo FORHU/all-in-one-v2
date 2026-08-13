@@ -12,6 +12,9 @@ export const featureManifest = {
     "CategoryDetailView",
     "useCategories",
     "useCategory",
+    "useCreateCategory",
+    "useUpdateCategory",
+    "useDeleteCategory",
   ] as const,
 } as const;
 

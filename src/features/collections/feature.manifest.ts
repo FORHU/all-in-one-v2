@@ -7,7 +7,13 @@
 export const featureManifest = {
   name: "collections",
   dependsOn: [] as const,
-  exposes: ["CollectionGrid", "useCollections"] as const,
+  exposes: [
+    "CollectionGrid",
+    "useCollections",
+    "useCreateCollection",
+    "useUpdateCollection",
+    "useDeleteCollection",
+  ] as const,
 } as const;
 
 export type CollectionsManifest = typeof featureManifest;

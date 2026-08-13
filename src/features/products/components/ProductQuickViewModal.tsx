@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X as XIcon } from "lucide-react";
 import type { AdminProduct } from "../contracts/products.contract";
 import {
   STATUS_STYLES,
@@ -65,7 +65,7 @@ export function ProductQuickViewModal({
             aria-label="Close quick view"
             className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-[var(--shop-bg)] text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
           >
-            <X className="h-3.5 w-3.5" />
+            <XIcon className="h-3.5 w-3.5" />
           </button>
         </div>
         <div className="grid grid-cols-2 gap-5 p-6">

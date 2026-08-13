@@ -3,6 +3,8 @@ import {
   AdminProductsResponseSchema,
   AdminProductResponseSchema,
   CategoryOptionsResponseSchema,
+  BrandCountsResponseSchema,
+  RenameBrandResponseSchema,
   type ProductStatus,
   type ProductVisibility,
 } from "../contracts/products.contract";
@@ -14,13 +16,15 @@ export type GetAdminProductsParams = {
   sortBy?: "createdAt" | "updatedAt" | "title" | "price" | "status" | "brand";
   sortOrder?: "asc" | "desc";
   status?: ProductStatus;
+  categoryId?: string;
+  // Exact match, distinct from `search` — "only this brand" (e.g. a Brand
+  // tile click), not a free-text guess.
+  brand?: string;
 };
 
 /**
  * GET /api/v2/products/admin — admin/staff-only (403s otherwise), requires
  * x-tenant-slug (attached by http.ts), returns products in every status.
- * There is no `category` query param on this endpoint — category is only
- * available per-row on the response, not as a server-side filter.
  */
 export const getAdminProducts = async (params: GetAdminProductsParams = {}) => {
   const query = new URLSearchParams();
@@ -30,6 +34,8 @@ export const getAdminProducts = async (params: GetAdminProductsParams = {}) => {
   if (params.sortBy) query.set("sortBy", params.sortBy);
   if (params.sortOrder) query.set("sortOrder", params.sortOrder);
   if (params.status) query.set("status", params.status);
+  if (params.categoryId) query.set("categoryId", params.categoryId);
+  if (params.brand) query.set("brand", params.brand);
 
   const qs = query.toString();
   const raw = await fetcher<unknown>(
@@ -91,4 +97,24 @@ export const deleteProduct = async (id: string) => {
 export const getCategoriesForSelect = async () => {
   const raw = await fetcher<unknown>("/api/v2/categories?limit=100");
   return CategoryOptionsResponseSchema.parse(raw).data.items;
+};
+
+/** GET /api/v2/products/brands — admin-only (catalog:read). */
+export const getBrandCounts = async () => {
+  const raw = await fetcher<unknown>("/api/v2/products/brands");
+  return BrandCountsResponseSchema.parse(raw).data.items;
+};
+
+/**
+ * PATCH /api/v2/products/brands/:brand — admin-only (catalog:write). Bulk
+ * renames a brand across every product carrying it, or clears it when
+ * `newBrand` is null. The closest thing to edit/delete for a value with no
+ * row of its own.
+ */
+export const renameBrand = async (brand: string, newBrand: string | null) => {
+  const raw = await fetcher<unknown>(
+    `/api/v2/products/brands/${encodeURIComponent(brand)}`,
+    { method: "PATCH", body: JSON.stringify({ newBrand }) },
+  );
+  return RenameBrandResponseSchema.parse(raw).data;
 };

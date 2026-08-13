@@ -1,6 +1,9 @@
 "use client";
 
-import { ChevronDown, MoreHorizontal } from "lucide-react";
+import {
+  ChevronDown as ChevronDownIcon,
+  MoreHorizontal as MoreHorizontalIcon,
+} from "lucide-react";
 import type { AdminProduct } from "../contracts/products.contract";
 import { useUpdateProduct } from "../hooks/useProducts";
 import {
@@ -128,7 +131,7 @@ export function ProductRow({
             aria-label={`Actions for ${product.title}`}
             className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreHorizontalIcon className="h-4 w-4" />
           </button>
           {isMenuOpen && (
             <div className="absolute right-0 top-8 z-10 w-[150px] rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] p-1.5 shadow-lg">
@@ -189,7 +192,7 @@ export function ProductRow({
         aria-label={isExpanded ? "Collapse details" : "Expand details"}
         className="flex w-full justify-center border-b border-[var(--shop-border)]/60 py-[3px] hover:bg-[var(--shop-bg)]"
       >
-        <ChevronDown
+        <ChevronDownIcon
           className="h-3 w-3 text-[var(--shop-text-muted)] transition-transform"
           style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
         />

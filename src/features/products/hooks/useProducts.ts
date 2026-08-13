@@ -9,6 +9,8 @@ import {
   updateProduct,
   deleteProduct,
   getCategoriesForSelect,
+  getBrandCounts,
+  renameBrand,
   type GetAdminProductsParams,
   type ProductWriteInput,
 } from "../api/products.client";
@@ -81,5 +83,42 @@ export function useCategoryOptions() {
     queryKey: [...productsKeys.all, "category-options", tenantSlug] as const,
     queryFn: () => getCategoriesForSelect(),
     enabled: Boolean(tenantSlug),
+  });
+}
+
+export function useBrandCounts() {
+  const tenantSlug = useTenantStore((s) => s.tenantSlug);
+
+  return useSafeQuery({
+    queryKey: [...productsKeys.all, "brand-counts", tenantSlug] as const,
+    queryFn: () => getBrandCounts(),
+    enabled: Boolean(tenantSlug),
+  });
+}
+
+export function useRenameBrand() {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: ({
+      brand,
+      newBrand,
+    }: {
+      brand: string;
+      newBrand: string | null;
+    }) => renameBrand(brand, newBrand),
+    onSuccess: (result, variables) => {
+      // Prefix-invalidate — matches the tenantSlug-suffixed brand-counts key
+      // and every cached products list page/search combo.
+      queryClient.invalidateQueries({
+        queryKey: [...productsKeys.all, "brand-counts"],
+      });
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+      notify.success(
+        variables.newBrand
+          ? `Renamed ${result.updatedCount} product${result.updatedCount === 1 ? "" : "s"} to "${variables.newBrand}".`
+          : `Cleared brand from ${result.updatedCount} product${result.updatedCount === 1 ? "" : "s"}.`,
+      );
+    },
   });
 }

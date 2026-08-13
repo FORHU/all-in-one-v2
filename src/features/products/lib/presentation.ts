@@ -49,6 +49,34 @@ export function formatMoney(value: number | null): string {
  * rendering the raw string as a broken <img src>; the backend fix only
  * covers new imports going forward.
  */
+const BRAND_TILE_COLORS = [
+  "#a8845a",
+  "#2b2f3d",
+  "#84a6ac",
+  "#7c8f82",
+  "#1b1730",
+  "#c97b86",
+];
+
+/** First letters of up to the first two words — "Solstice Athletics" -> "SA". */
+export function brandInitials(brand: string): string {
+  const words = brand.trim().split(/\s+/).filter(Boolean);
+  return ((words[0]?.[0] ?? "") + (words[1]?.[0] ?? "")).toUpperCase();
+}
+
+/**
+ * Deterministic color per brand name, purely presentational — brand has no
+ * "color" field of its own to read, so this just needs to be stable across
+ * renders, not meaningful.
+ */
+export function brandTileColor(brand: string): string {
+  let hash = 0;
+  for (let i = 0; i < brand.length; i++) {
+    hash = (hash * 31 + brand.charCodeAt(i)) | 0;
+  }
+  return BRAND_TILE_COLORS[Math.abs(hash) % BRAND_TILE_COLORS.length];
+}
+
 export function resolveThumbnailUrl(value: string | null): string | null {
   if (!value) return null;
   if (value.startsWith("[")) {

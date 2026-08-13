@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Plus as PlusIcon } from "lucide-react";
 import { Pagination } from "@/shared/components/Pagination";
 import { useCategories } from "../hooks/useCategories";
 import { CategoryCard } from "./CategoryCard";
 import { CategoryGridSkeleton } from "./CategoryGridSkeleton";
+import { CategoryFormModal } from "./CategoryFormModal";
+import type { Category } from "../contracts/categories.contract";
 
 const PAGE_SIZE = 24;
 
@@ -20,6 +23,9 @@ export function CategoryGrid() {
     page,
     limit: PAGE_SIZE,
   });
+  const [formModal, setFormModal] = useState<
+    { mode: "create" } | { mode: "edit"; category: Category } | null
+  >(null);
 
   if (!mounted || isLoading) {
     return <CategoryGridSkeleton />;
@@ -48,28 +54,51 @@ export function CategoryGrid() {
 
   const topLevel = (data?.items ?? []).filter((c) => c.parentId === null);
 
-  if (topLevel.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] p-10 text-center">
-        <p className="text-sm text-[var(--shop-text-muted)]">
-          No categories yet for this store.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {topLevel.map((c) => (
-          <CategoryCard key={c.id} category={c} />
-        ))}
+      <div className="mb-3.5 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setFormModal({ mode: "create" })}
+          className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[11.5px] font-bold uppercase tracking-wide text-white transition hover:brightness-90"
+          style={{ backgroundColor: "var(--shop-accent-dark)" }}
+        >
+          <PlusIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
+          Add category
+        </button>
       </div>
-      <Pagination
-        page={data?.page ?? 1}
-        totalPages={data?.totalPages ?? 1}
-        onPageChange={setPage}
-      />
+
+      {topLevel.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] p-10 text-center">
+          <p className="text-sm text-[var(--shop-text-muted)]">
+            No categories yet for this store.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {topLevel.map((c) => (
+              <CategoryCard
+                key={c.id}
+                category={c}
+                onEdit={(category) => setFormModal({ mode: "edit", category })}
+              />
+            ))}
+          </div>
+          <Pagination
+            page={data?.page ?? 1}
+            totalPages={data?.totalPages ?? 1}
+            onPageChange={setPage}
+          />
+        </>
+      )}
+
+      {formModal && (
+        <CategoryFormModal
+          category={formModal.mode === "edit" ? formModal.category : undefined}
+          onClose={() => setFormModal(null)}
+        />
+      )}
     </div>
   );
 }

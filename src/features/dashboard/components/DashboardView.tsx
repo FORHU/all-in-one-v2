@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RotateCw } from "lucide-react";
+import {
+  AlertTriangle as AlertTriangleIcon,
+  RotateCw as RotateCwIcon,
+} from "lucide-react";
 import { StatsCard, type DashboardStat } from "./StatsCard";
 import { RevenueChart } from "./RevenueChart";
 import { DateRangePicker } from "./DateRangePicker";
@@ -109,7 +112,7 @@ export function DashboardPanel() {
           }}
         >
           <div className="flex items-center gap-2.5">
-            <AlertTriangle
+            <AlertTriangleIcon
               className="h-5 w-5 flex-shrink-0"
               style={{ color: "var(--shop-danger)" }}
               strokeWidth={2.25}
@@ -130,7 +133,7 @@ export function DashboardPanel() {
             className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-60"
             style={{ backgroundColor: "var(--shop-accent-dark)" }}
           >
-            <RotateCw
+            <RotateCwIcon
               className={`h-3.5 w-3.5 ${daily.isRefetching ? "animate-spin" : ""}`}
               strokeWidth={2.5}
             />

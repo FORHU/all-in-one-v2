@@ -28,6 +28,10 @@ type ProductsTableProps = {
   onSearchChange: (search: string) => void;
   statusFilter: "all" | ProductStatus;
   onStatusFilterChange: (status: "all" | ProductStatus) => void;
+  categoryFilter: string;
+  onCategoryFilterChange: (categoryId: string) => void;
+  brandFilter: string;
+  onBrandFilterChange: (brand: string) => void;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -44,6 +48,10 @@ export function ProductsTable({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  categoryFilter,
+  onCategoryFilterChange,
+  brandFilter,
+  onBrandFilterChange,
   page,
   totalPages,
   onPageChange,
@@ -85,6 +93,10 @@ export function ProductsTable({
       <FilterBar
         statusFilter={statusFilter}
         onStatusFilterChange={onStatusFilterChange}
+        categoryFilter={categoryFilter}
+        onCategoryFilterChange={onCategoryFilterChange}
+        brandFilter={brandFilter}
+        onBrandFilterChange={onBrandFilterChange}
         search={search}
         onSearchChange={onSearchChange}
         resultsCount={total}

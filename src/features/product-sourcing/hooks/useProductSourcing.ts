@@ -8,17 +8,22 @@ import {
 } from "../api/product-sourcing.client";
 import { productSourcingKeys } from "../api/product-sourcing.keys";
 
-// Only supplier wired up so far — matches the one `SupplierPartner` row
-// created via the manual walkthrough (docs/Framework-Structure/
-// supplier-import-walkthrough.md). Promote to a param if a second supplier
-// partner is ever onboarded.
-export const SOURCING_SUPPLIER_ID = "cj-dropshipping";
+// The only suppliers with both a working adapter (real API calls, not a
+// `// TODO` stub) and an active `SupplierPartner` row in the DB — see
+// docs/Framework-Structure/supplier-import-walkthrough.md. AliExpress is a
+// stub, and Printify/Spocket have DB rows but no adapter at all yet.
+export const SUPPLIER_OPTIONS = [
+  { id: "cj-dropshipping", label: "CJ Dropshipping" },
+  { id: "printful", label: "Printful" },
+] as const;
 
-/** Search the connected supplier's live catalog. No-ops on an empty query. */
-export function useSupplierSearch(query: string, page = 1) {
+export type SupplierOptionId = (typeof SUPPLIER_OPTIONS)[number]["id"];
+
+/** Search the given supplier's live catalog. No-ops on an empty query. */
+export function useSupplierSearch(supplierId: string, query: string, page = 1) {
   return useSafeQuery({
-    queryKey: productSourcingKeys.search(SOURCING_SUPPLIER_ID, query, page),
-    queryFn: () => searchSupplierProducts(SOURCING_SUPPLIER_ID, query, page),
+    queryKey: productSourcingKeys.search(supplierId, query, page),
+    queryFn: () => searchSupplierProducts(supplierId, query, page),
     enabled: query.trim().length > 0,
     // Keep showing the previous page's results while the next page loads,
     // instead of flashing back to the loading skeleton on every page change.
@@ -27,14 +32,13 @@ export function useSupplierSearch(query: string, page = 1) {
 }
 
 /** Full detail for one external product, to preview before importing. */
-export function useSupplierProductDetail(externalId: string | null) {
+export function useSupplierProductDetail(
+  supplierId: string,
+  externalId: string | null,
+) {
   return useSafeQuery({
-    queryKey: productSourcingKeys.detail(
-      SOURCING_SUPPLIER_ID,
-      externalId ?? "",
-    ),
-    queryFn: () =>
-      getSupplierProduct(SOURCING_SUPPLIER_ID, externalId as string),
+    queryKey: productSourcingKeys.detail(supplierId, externalId ?? ""),
+    queryFn: () => getSupplierProduct(supplierId, externalId as string),
     enabled: externalId !== null,
   });
 }
@@ -42,8 +46,13 @@ export function useSupplierProductDetail(externalId: string | null) {
 /** Import the previewed product into the local catalog. */
 export function useImportProduct() {
   return useSafeMutation({
-    mutationFn: (externalId: string) =>
-      importProduct({ supplierId: SOURCING_SUPPLIER_ID, externalId }),
+    mutationFn: ({
+      supplierId,
+      externalId,
+    }: {
+      supplierId: string;
+      externalId: string;
+    }) => importProduct({ supplierId, externalId }),
     onSuccess: (product) => {
       notify.success(`Imported "${product.title}" into the catalog.`);
     },

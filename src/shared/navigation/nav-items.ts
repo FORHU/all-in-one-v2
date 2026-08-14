@@ -51,6 +51,7 @@ export const STORE_NAV_ITEMS: NavItem[] = [
       { label: "Categories", href: "/products/categories" },
       { label: "Brands", href: "/products/brands" },
       { label: "Collections", href: "/products/collections" },
+      { label: "Pricing", href: "/products/pricing" },
     ],
   },
   {

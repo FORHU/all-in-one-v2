@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { X as XIcon } from "lucide-react";
+import { Dropdown } from "@/shared/components/Dropdown";
 import {
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
+  useCategories,
 } from "../hooks/useCategories";
 import type { Category } from "../contracts/categories.contract";
 import type { CategoryWriteInput } from "../api/categories.client";
+
+const NO_PARENT = "";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
@@ -28,11 +32,15 @@ function slugify(name: string): string {
 type CategoryFormModalProps = {
   /** Present = edit mode (seeded from this row). Absent = create mode. */
   category?: Category;
+  // Create-mode only — pre-selects the parent, used by the "Add
+  // subcategory" entry point on a category's detail page.
+  defaultParentId?: string;
   onClose: () => void;
 };
 
 export function CategoryFormModal({
   category,
+  defaultParentId,
   onClose,
 }: CategoryFormModalProps) {
   const isEdit = Boolean(category);
@@ -40,7 +48,28 @@ export function CategoryFormModal({
   const [name, setName] = useState(category?.name ?? "");
   const [slug, setSlug] = useState(category?.slug ?? "");
   const [description, setDescription] = useState(category?.description ?? "");
+  const [parentId, setParentId] = useState(
+    category?.parentId ?? defaultParentId ?? NO_PARENT,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Candidate parents: root categories + their one level of children (the
+  // only depth this admin UI otherwise shows) — a flat picker rather than a
+  // nested one, since the tree is never more than 2 levels deep in practice.
+  // Excludes itself and its own children so you can't parent a category to
+  // itself or create an immediate cycle.
+  const { data: categoriesPage } = useCategories({ limit: 100 });
+  const ownChildIds = new Set((category?.children ?? []).map((c) => c.id));
+  const parentOptions = [
+    { value: NO_PARENT, label: "No parent (top-level)" },
+    ...(categoriesPage?.items ?? [])
+      .flatMap((root) => [root, ...root.children])
+      .filter((c) => c.id !== category?.id && !ownChildIds.has(c.id))
+      .map((c) => ({
+        value: c.id,
+        label: c.parentId ? `${c.name} (subcategory)` : c.name,
+      })),
+  ];
 
   // Keep the form synced if the underlying row refetches mid-edit.
   useEffect(() => {
@@ -48,6 +77,7 @@ export function CategoryFormModal({
     setName(category.name);
     setSlug(category.slug);
     setDescription(category.description ?? "");
+    setParentId(category.parentId ?? NO_PARENT);
   }, [category]);
 
   const onValidationError = (fields: Record<string, string[]>) => {
@@ -73,7 +103,8 @@ export function CategoryFormModal({
     !isEdit ||
     name !== category!.name ||
     slug !== category!.slug ||
-    description !== (category!.description ?? "");
+    description !== (category!.description ?? "") ||
+    parentId !== (category!.parentId ?? NO_PARENT);
 
   const buildInput = (): CategoryWriteInput => ({
     name,
@@ -82,6 +113,7 @@ export function CategoryFormModal({
     // than left blank.
     slug: slug.trim() || slugify(name),
     description: description.trim() || null,
+    parentId: parentId === NO_PARENT ? null : parentId,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -148,6 +180,17 @@ export function CategoryFormModal({
               placeholder={name ? slugify(name) : "auto-generated from name"}
               disabled={isPending}
               className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Parent category</label>
+            <Dropdown
+              value={parentId}
+              options={parentOptions}
+              onChange={setParentId}
+              disabled={isPending}
+              aria-label="Parent category"
             />
           </div>
 

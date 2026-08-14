@@ -29,6 +29,11 @@ const ProductCategorySchema = z.object({
   name: z.string(),
 });
 
+const ProductPricingRuleRefSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
 export const AdminProductSchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -45,15 +50,62 @@ export const AdminProductSchema = z.object({
   price: z.number().nullable(),
   salePrice: z.number().nullable(),
   compareAtPrice: z.number().nullable(),
+  // Lowest supplier cost across this product's variants — null unless
+  // something was imported from a supplier. Distinct from `price`, which
+  // already has any pricing-rule markup applied on top of this.
+  originalPrice: z.number().nullable(),
   category: ProductCategorySchema.nullable(),
+  // The markup rule currently applied to this product's variants (null =
+  // no markup, variants sell at their raw calculated/manual price). See
+  // pricing-rules.contract.ts for rule management itself.
+  pricingRule: ProductPricingRuleRefSchema.nullable(),
   // Count of non-deleted variants, not the variants themselves — the admin
   // listing is a flat management table, not a per-product detail view.
   variantCount: z.number(),
   inStock: z.boolean(),
+  // Full product-level photo gallery — `thumbnailUrl` above is just the
+  // first entry.
+  images: z.array(z.string()),
   createdBy: z.string().nullable(),
   updatedBy: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
+});
+
+/**
+ * Ground-truthed against `AdminProductVariantDto`
+ * (all-in-one-v2-api/src/modules/catalog/product/dto/product-listing.dto.ts).
+ * `color`/`size` are derived server-side from the variant's real
+ * CatalogVariantAttribute links (not the raw JSON attributes column) — the
+ * same EAV data the storefront's filters read from. `stockAvailable` is
+ * read-only here; real stock adjustments live in the Inventory feature.
+ */
+export const AdminProductVariantSchema = z.object({
+  id: z.string(),
+  sku: z.string().nullable(),
+  title: z.string(),
+  price: z.number(),
+  compareAtPrice: z.number().nullable(),
+  color: z.string().nullable(),
+  size: z.string().nullable(),
+  stockAvailable: z.number(),
+  thumbnailUrl: z.string().nullable(),
+});
+
+/** GET /api/v2/products/:productId/variants */
+export const ProductVariantsResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(AdminProductVariantSchema),
+  }),
+});
+
+/** POST/PUT /api/v2/products/:productId/variants(/:variantId) */
+export const ProductVariantResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: AdminProductVariantSchema,
 });
 
 export const StatusCountsSchema = z.object({
@@ -147,3 +199,4 @@ export type AdminProductsPage = z.infer<
 export type CategoryOption = z.infer<typeof CategoryOptionSchema>;
 export type StatusCounts = z.infer<typeof StatusCountsSchema>;
 export type BrandCount = z.infer<typeof BrandCountSchema>;
+export type AdminProductVariant = z.infer<typeof AdminProductVariantSchema>;

@@ -5,6 +5,8 @@ import {
   CategoryOptionsResponseSchema,
   BrandCountsResponseSchema,
   RenameBrandResponseSchema,
+  ProductVariantsResponseSchema,
+  ProductVariantResponseSchema,
   type ProductStatus,
   type ProductVisibility,
 } from "../contracts/products.contract";
@@ -61,6 +63,11 @@ export type ProductWriteInput = {
   compareAtPrice?: number | null;
   thumbnailUrl?: string | null;
   categoryId?: string | null;
+  // Nullable, not just optional: an explicit `null` clears any pricing rule
+  // on an existing product. Omitting it on create defers to the tenant's
+  // default rule (see ProductService.createProduct) rather than leaving the
+  // product unpriced-by-rule.
+  pricingRuleId?: string | null;
 };
 
 /** POST /api/v2/products — admin-only (catalog:write). */
@@ -117,4 +124,57 @@ export const renameBrand = async (brand: string, newBrand: string | null) => {
     { method: "PATCH", body: JSON.stringify({ newBrand }) },
   );
   return RenameBrandResponseSchema.parse(raw).data;
+};
+
+export type VariantWriteInput = {
+  title: string;
+  price: number;
+  compareAtPrice?: number | null;
+  sku?: string | null;
+  color?: string | null;
+  size?: string | null;
+};
+
+/** GET /api/v2/products/:productId/variants — admin-only (catalog:read). */
+export const getProductVariants = async (productId: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/products/${productId}/variants`);
+  return ProductVariantsResponseSchema.parse(raw).data.items;
+};
+
+/** POST /api/v2/products/:productId/variants — admin-only (catalog:write). */
+export const createProductVariant = async (
+  productId: string,
+  input: VariantWriteInput,
+) => {
+  const raw = await fetcher<unknown>(`/api/v2/products/${productId}/variants`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return ProductVariantResponseSchema.parse(raw).data;
+};
+
+/** PUT /api/v2/products/:productId/variants/:variantId — admin-only (catalog:write). */
+export const updateProductVariant = async (
+  productId: string,
+  variantId: string,
+  input: Partial<VariantWriteInput>,
+) => {
+  const raw = await fetcher<unknown>(
+    `/api/v2/products/${productId}/variants/${variantId}`,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+  return ProductVariantResponseSchema.parse(raw).data;
+};
+
+/** DELETE /api/v2/products/:productId/variants/:variantId — admin-only (catalog:delete), soft-deletes the variant. */
+export const deleteProductVariant = async (
+  productId: string,
+  variantId: string,
+) => {
+  await fetcher<unknown>(
+    `/api/v2/products/${productId}/variants/${variantId}`,
+    {
+      method: "DELETE",
+    },
+  );
 };

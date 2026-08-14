@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Pencil as PencilIcon,
+  Plus as PlusIcon,
   ArrowLeft as ArrowLeftIcon,
   ArrowRight as ArrowRightIcon,
 } from "lucide-react";
@@ -20,6 +21,7 @@ export function CategoryDetailView({ slug }: { slug: string }) {
 
   const { data: category, isLoading, error, refetch } = useCategory(slug);
   const [editing, setEditing] = useState<Category | null>(null);
+  const [addingSubcategory, setAddingSubcategory] = useState(false);
 
   if (!mounted || isLoading) {
     return <CategoryGridSkeleton />;
@@ -102,6 +104,21 @@ export function CategoryDetailView({ slug }: { slug: string }) {
         </button>
       </div>
 
+      <div className="mb-3.5 flex items-center justify-between">
+        <p className="text-[10.5px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
+          Subcategories
+        </p>
+        <button
+          type="button"
+          onClick={() => setAddingSubcategory(true)}
+          className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white transition hover:brightness-90"
+          style={{ backgroundColor: "var(--shop-accent-dark)" }}
+        >
+          <PlusIcon className="h-3 w-3" strokeWidth={2.5} />
+          Add subcategory
+        </button>
+      </div>
+
       {category.children.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] p-10 text-center">
           <p className="text-sm text-[var(--shop-text-muted)]">
@@ -120,6 +137,12 @@ export function CategoryDetailView({ slug }: { slug: string }) {
         <CategoryFormModal
           category={editing}
           onClose={() => setEditing(null)}
+        />
+      )}
+      {addingSubcategory && (
+        <CategoryFormModal
+          defaultParentId={category.id}
+          onClose={() => setAddingSubcategory(false)}
         />
       )}
     </div>

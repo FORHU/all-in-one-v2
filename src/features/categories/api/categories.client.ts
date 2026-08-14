@@ -48,6 +48,9 @@ export type CategoryWriteInput = {
   // on an existing category. `undefined` is dropped by JSON.stringify
   // before the request is sent, so it can't express "clear this".
   description?: string | null;
+  // `null` = top-level (no parent). `undefined` on an update leaves the
+  // parent unchanged.
+  parentId?: string | null;
 };
 
 /** POST /api/v2/categories — admin-only (catalog:write). */

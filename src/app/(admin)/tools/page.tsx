@@ -6,11 +6,16 @@ import {
   useSupplierSearch,
   useSupplierProductDetail,
   useImportProduct,
+  SUPPLIER_OPTIONS,
+  type SupplierOptionId,
 } from "@/features/product-sourcing/hooks/useProductSourcing";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
 export default function ToolsPage() {
+  const [supplierId, setSupplierId] = useState<SupplierOptionId>(
+    SUPPLIER_OPTIONS[0].id,
+  );
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -25,17 +30,19 @@ export default function ToolsPage() {
     return () => clearTimeout(id);
   }, [query]);
 
-  // A changed search invalidates the current page number.
+  // A changed search (or supplier) invalidates the current page number and
+  // whatever product was previewed from the previous supplier's results.
   useEffect(() => {
     setPage(1);
-  }, [debouncedQuery]);
+    setSelectedExternalId(null);
+  }, [debouncedQuery, supplierId]);
 
   const {
     data: results,
     isLoading: isSearching,
     isFetching: isSearchFetching,
     isError: isSearchError,
-  } = useSupplierSearch(debouncedQuery, page);
+  } = useSupplierSearch(supplierId, debouncedQuery, page);
 
   // True in the gap between a keystroke and the debounced request actually
   // firing, so the search input can show feedback with no dead gap.
@@ -45,7 +52,7 @@ export default function ToolsPage() {
     data: detail,
     isLoading: isDetailLoading,
     isError: isDetailError,
-  } = useSupplierProductDetail(selectedExternalId);
+  } = useSupplierProductDetail(supplierId, selectedExternalId);
 
   const importMutation = useImportProduct();
 
@@ -61,6 +68,9 @@ export default function ToolsPage() {
         </p>
       </div>
       <SupplierProductSearch
+        supplierId={supplierId}
+        onSupplierChange={(id) => setSupplierId(id as SupplierOptionId)}
+        supplierOptions={SUPPLIER_OPTIONS}
         query={query}
         onQueryChange={setQuery}
         results={results?.items}
@@ -76,7 +86,9 @@ export default function ToolsPage() {
         detail={detail}
         isDetailLoading={isDetailLoading}
         isDetailError={isDetailError}
-        onImport={(externalId) => importMutation.mutate(externalId)}
+        onImport={(externalId) =>
+          importMutation.mutate({ supplierId, externalId })
+        }
         isImporting={importMutation.isPending}
       />
     </div>

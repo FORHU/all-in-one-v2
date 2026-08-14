@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 as LoaderIcon, Search as SearchIcon } from "lucide-react";
+import { Loader2 as Loader2Icon, Search as SearchIcon } from "lucide-react";
 import { Pagination } from "@/shared/components/Pagination";
 import type { SupplierSearchResult } from "../contracts/product-sourcing.contract";
 import { formatPrice } from "../lib/presentation";
@@ -83,7 +83,7 @@ export function SupplierSearchResults({
       <div className="relative">
         {isFetching && (
           <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5 rounded-full border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2.5 py-1 text-xs text-[var(--shop-text-muted)] shadow-sm">
-            <LoaderIcon
+            <Loader2Icon
               className="h-3.5 w-3.5 animate-spin"
               aria-hidden="true"
             />
@@ -110,16 +110,29 @@ export function SupplierSearchResults({
                 background: "var(--shop-surface)",
               }}
             >
-              {item.bigImage ? (
-                // eslint-disable-next-line @next/next/no-img-element -- external supplier-hosted image, not a local asset next/image can optimize
-                <img
-                  src={item.bigImage}
-                  alt=""
-                  className="h-28 w-full rounded-lg object-cover"
-                />
-              ) : (
-                <div className="h-28 w-full rounded-lg bg-[var(--shop-bg-soft)]" />
-              )}
+              <div className="relative">
+                {item.bigImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- external supplier-hosted image, not a local asset next/image can optimize
+                  <img
+                    src={item.bigImage}
+                    alt=""
+                    className="h-28 w-full rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="h-28 w-full rounded-lg bg-[var(--shop-bg-soft)]" />
+                )}
+                {item.alreadyImported && (
+                  <span
+                    className="absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                    style={{
+                      color: "var(--shop-success)",
+                      backgroundColor: "var(--shop-success-bg)",
+                    }}
+                  >
+                    Imported
+                  </span>
+                )}
+              </div>
               <p className="line-clamp-2 text-xs font-semibold text-[var(--shop-text)]">
                 {item.nameEn || "Untitled product"}
               </p>

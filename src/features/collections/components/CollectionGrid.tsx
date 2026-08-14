@@ -10,6 +10,7 @@ import { CollectionFormModal } from "./CollectionFormModal";
 import type { Collection } from "../contracts/collections.contract";
 
 const PAGE_SIZE = 24;
+const SEARCH_DEBOUNCE_MS = 300;
 
 export function CollectionGrid() {
   // tenantSlug (and therefore this query) reads localStorage, which the
@@ -19,9 +20,23 @@ export function CollectionGrid() {
   useEffect(() => setMounted(true), []);
 
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce free-text search so we don't fire a request per keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
   const { data, isLoading, error, refetch } = useCollections({
     page,
     limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
   });
   const [formModal, setFormModal] = useState<
     { mode: "create" } | { mode: "edit"; collection: Collection } | null
@@ -55,7 +70,13 @@ export function CollectionGrid() {
 
   return (
     <div>
-      <div className="mb-3.5 flex justify-end">
+      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search collections by title…"
+          className="w-72 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]"
+        />
         <button
           type="button"
           onClick={() => setFormModal({ mode: "create" })}
@@ -70,7 +91,9 @@ export function CollectionGrid() {
       {topLevel.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] p-10 text-center">
           <p className="text-sm text-[var(--shop-text-muted)]">
-            No collections yet for this store.
+            {debouncedSearch
+              ? `No collections match "${debouncedSearch}".`
+              : "No collections yet for this store."}
           </p>
         </div>
       ) : (

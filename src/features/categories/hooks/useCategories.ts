@@ -36,6 +36,10 @@ export function useCreateCategory(options?: {
     onValidationError: options?.onValidationError,
     onSuccess: (category) => {
       queryClient.invalidateQueries({ queryKey: categoriesKeys.lists() });
+      // A newly created category can be a subcategory of whatever detail
+      // page is currently open (CategoryDetailView's "Add subcategory"),
+      // which reads through the detail query, not the list one.
+      queryClient.invalidateQueries({ queryKey: categoriesKeys.details() });
       notify.success(`Category "${category.name}" created.`);
     },
   });

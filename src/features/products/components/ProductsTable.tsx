@@ -108,7 +108,7 @@ export function ProductsTable({
       />
 
       <div className="overflow-hidden rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)]">
-        <div className="grid grid-cols-[36px_2.4fr_1fr_1.1fr_1fr_1fr_0.9fr_40px] items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-bg-soft)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
+        <div className="grid grid-cols-[36px_2.3fr_1.3fr_1fr_1fr_1fr_40px] items-center gap-4 border-b border-[var(--shop-border)] bg-[var(--shop-bg-soft)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
           <input
             type="checkbox"
             checked={allSelected}
@@ -121,7 +121,6 @@ export function ProductsTable({
           <span>Price</span>
           <span>Stock</span>
           <span>Status</span>
-          <span>Variants</span>
           <span />
         </div>
 

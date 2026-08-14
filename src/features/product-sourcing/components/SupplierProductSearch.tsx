@@ -1,14 +1,18 @@
 "use client";
 
-import { Loader2 as LoaderIcon, Search as SearchIcon } from "lucide-react";
+import { Loader2 as Loader2Icon, Search as SearchIcon } from "lucide-react";
 import { SupplierSearchResults } from "./SupplierSearchResults";
 import { SupplierProductPreview } from "./SupplierProductPreview";
+import { Dropdown, type DropdownOption } from "@/shared/components/Dropdown";
 import type {
   SupplierSearchResult,
   SupplierProductDetail,
 } from "../contracts/product-sourcing.contract";
 
 type SupplierProductSearchProps = {
+  supplierId: string;
+  onSupplierChange: (supplierId: string) => void;
+  supplierOptions: readonly { id: string; label: string }[];
   query: string;
   onQueryChange: (query: string) => void;
   results: SupplierSearchResult[] | undefined;
@@ -29,6 +33,9 @@ type SupplierProductSearchProps = {
 };
 
 export function SupplierProductSearch({
+  supplierId,
+  onSupplierChange,
+  supplierOptions,
   query,
   onQueryChange,
   results,
@@ -49,11 +56,29 @@ export function SupplierProductSearch({
 }: SupplierProductSearchProps) {
   const isBusy = isSearching || isSearchFetching || isSearchPending;
 
+  const supplierDropdownOptions: DropdownOption[] = supplierOptions.map(
+    (option) => ({ value: option.id, label: option.label }),
+  );
+
   return (
     <div>
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
+          Supplier
+        </span>
+        <Dropdown
+          value={supplierId}
+          options={supplierDropdownOptions}
+          onChange={onSupplierChange}
+          size="sm"
+          className="w-44"
+          aria-label="Supplier"
+        />
+      </div>
+
       <div className="mb-5 flex items-center gap-2 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2">
         {isBusy ? (
-          <LoaderIcon
+          <Loader2Icon
             className="h-4 w-4 shrink-0 animate-spin text-[var(--shop-accent)]"
             aria-hidden="true"
           />

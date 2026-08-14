@@ -43,6 +43,10 @@ export const SupplierSearchResultSchema = z.object({
   sellPrice: z.preprocess(coercePrice, z.number().optional()),
   sku: z.string().optional(),
   categoryName: z.string().optional(),
+  // Tenant-scoped: true when this external product already has a
+  // CatalogProduct in THIS store — see SupplierService.searchSupplier.
+  alreadyImported: z.boolean().optional(),
+  catalogProductId: z.string().nullable().optional(),
 });
 
 export type SupplierSearchResult = z.infer<typeof SupplierSearchResultSchema>;
@@ -70,16 +74,41 @@ export const SupplierSearchResponseSchema = z.object({
   data: SupplierSearchPageSchema,
 });
 
+// One buyable color/size combination of a product — CJ returns these
+// alongside the parent product on the detail endpoint (confirmed by curling
+// /product/query directly: a real product can carry 30+ of these).
+export const SupplierProductVariantSchema = z.object({
+  vid: z.string(),
+  variantNameEn: z.string().optional(),
+  variantKey: z.string().optional(),
+  variantImage: z.string().optional(),
+  variantSku: z.string().optional(),
+  variantSellPrice: z.preprocess(coercePrice, z.number().optional()),
+});
+
+export type SupplierProductVariant = z.infer<
+  typeof SupplierProductVariantSchema
+>;
+
 export const SupplierProductDetailSchema = z.object({
   pid: z.string(),
   productNameEn: z.string().optional(),
   bigImage: z.string().optional(),
+  // Full image gallery — bigImage is just its first entry. Optional/absent
+  // on some CJ products, so the preview falls back to bigImage alone.
+  productImageSet: z.array(z.string()).optional(),
   // Same range-string quirk as SupplierSearchResultSchema.sellPrice — see
   // coercePrice's comment above.
   sellPrice: z.preprocess(coercePrice, z.number().optional()),
   productSku: z.string().optional(),
   categoryName: z.string().optional(),
   description: z.string().optional(),
+  productWeight: z.string().optional(),
+  variants: z.array(SupplierProductVariantSchema).optional(),
+  // Tenant-scoped: true when this product already has a CatalogProduct in
+  // THIS store — see SupplierService.getSupplierProduct.
+  alreadyImported: z.boolean().optional(),
+  catalogProductId: z.string().nullable().optional(),
 });
 
 export type SupplierProductDetail = z.infer<typeof SupplierProductDetailSchema>;

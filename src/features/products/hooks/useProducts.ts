@@ -11,8 +11,13 @@ import {
   getCategoriesForSelect,
   getBrandCounts,
   renameBrand,
+  getProductVariants,
+  createProductVariant,
+  updateProductVariant,
+  deleteProductVariant,
   type GetAdminProductsParams,
   type ProductWriteInput,
+  type VariantWriteInput,
 } from "../api/products.client";
 import { productsKeys } from "../api/products.keys";
 
@@ -93,6 +98,70 @@ export function useBrandCounts() {
     queryKey: [...productsKeys.all, "brand-counts", tenantSlug] as const,
     queryFn: () => getBrandCounts(),
     enabled: Boolean(tenantSlug),
+  });
+}
+
+/** Only meaningful in edit mode — `enabled` is false while `productId` is empty (create mode). */
+export function useProductVariants(productId: string) {
+  return useSafeQuery({
+    queryKey: productsKeys.variants(productId),
+    queryFn: () => getProductVariants(productId),
+    enabled: Boolean(productId),
+  });
+}
+
+/**
+ * Adding/removing/editing a variant updates ProductFormModal's own local
+ * variant list directly from the mutation response — invalidation here is
+ * only so a stale cached list is refreshed once the modal closes, same
+ * reasoning as useAddCollectionItem.
+ */
+export function useCreateProductVariant(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: (input: VariantWriteInput) =>
+      createProductVariant(productId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: productsKeys.variants(productId),
+      });
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+    },
+  });
+}
+
+export function useUpdateProductVariant(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: ({
+      variantId,
+      input,
+    }: {
+      variantId: string;
+      input: Partial<VariantWriteInput>;
+    }) => updateProductVariant(productId, variantId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: productsKeys.variants(productId),
+      });
+    },
+  });
+}
+
+export function useDeleteProductVariant(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: (variantId: string) =>
+      deleteProductVariant(productId, variantId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: productsKeys.variants(productId),
+      });
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+    },
   });
 }
 

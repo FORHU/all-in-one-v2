@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { BrandGrid } from "@/features/products/components/BrandGrid";
+
+export const metadata: Metadata = { title: "Brands" };
 
 export default function BrandsPage() {
   return (

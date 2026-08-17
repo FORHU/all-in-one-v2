@@ -5,6 +5,7 @@ import { notify } from "@/shared/lib/notify";
 import {
   getOrder,
   updateOrderStatus,
+  cancelOrder,
   getSupplierOrders,
   updateShipment,
   type UpdateShipmentInput,
@@ -35,6 +36,37 @@ export function useUpdateOrderStatus(orderId: string) {
       );
     },
   });
+}
+
+/**
+ * Cancels an order that hasn't been paid for yet — the backend 409s (message
+ * surfaced by the global mutation-error toast) if any payment on it is
+ * already PAID, in which case a refund is the only real option.
+ */
+export function useCancelOrder(orderId: string) {
+  const queryClient = useQueryClient();
+  return useSafeMutation({
+    mutationFn: () => cancelOrder(orderId),
+    onSuccess: (order) => {
+      queryClient.setQueryData(ordersKeys.detail(orderId), order);
+      queryClient.invalidateQueries({ queryKey: ordersKeys.lists() });
+      notify.success(`Order ${order.orderNumber} cancelled.`);
+    },
+  });
+}
+
+/**
+ * Lets a sibling composed alongside OrderDetailView on the order detail page
+ * (the Returns panel, a different feature) ask this order's cache to
+ * refresh after an action that might have changed it — e.g. a refund that
+ * flips the order to REFUNDED. Composed at the app layer only: the app
+ * layer can't touch react-query directly, so it calls this instead, and no
+ * feature imports another feature to get here.
+ */
+export function useRefreshOrder(orderId: string) {
+  const queryClient = useQueryClient();
+  return () =>
+    queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) });
 }
 
 /** The supplier-side fulfillments backing this order (dropship/CJ etc.). */

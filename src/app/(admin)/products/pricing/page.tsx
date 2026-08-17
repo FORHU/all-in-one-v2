@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { PricingRuleGrid } from "@/features/products/components/PricingRuleGrid";
+
+export const metadata: Metadata = { title: "Pricing" };
 
 export default function PricingPage() {
   return (

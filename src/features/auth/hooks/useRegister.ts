@@ -19,7 +19,7 @@ export function useRegister(options?: UseRegisterOptions) {
     mutationFn: (input: RegisterInput) => register(input),
     onSuccess: () => {
       notify.success("Account created successfully. Please sign in.");
-      router.push("/");
+      router.push("/login");
     },
     onValidationError: options?.onValidationError,
   });

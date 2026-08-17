@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { CollectionGrid } from "@/features/collections/components/CollectionGrid";
+
+export const metadata: Metadata = { title: "Collections" };
 
 export default function CollectionsPage() {
   return (

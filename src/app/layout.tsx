@@ -20,19 +20,20 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Boilerplate 2026",
-    default: "Admin Central | Sign in",
+    template: "%s | All In One",
+    default: "All In One | Admin Central",
   },
-  description: "Secure E-commerce Management Suite — sign in to Admin Central.",
+  description:
+    "The multi-store agency admin panel — orders, catalog, suppliers and marketing across every storefront, managed from one dashboard.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || "https://boilerplate-2026.vercel.app",
   ),
   openGraph: {
-    title: "Boilerplate 2026 | Premium Starter",
+    title: "All In One | Admin Central",
     description:
-      "Experience the next generation of development with Boilerplate 2026.",
+      "The multi-store agency admin panel — orders, catalog, suppliers and marketing across every storefront, managed from one dashboard.",
     url: "https://boilerplate-2026.vercel.app",
-    siteName: "Boilerplate 2026",
+    siteName: "All In One",
     images: [
       {
         url: "/og-image.png",
@@ -45,9 +46,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Boilerplate 2026 | Premium Starter",
+    title: "All In One | Admin Central",
     description:
-      "Experience the next generation of development with Boilerplate 2026.",
+      "The multi-store agency admin panel — orders, catalog, suppliers and marketing across every storefront, managed from one dashboard.",
     images: ["/og-image.png"],
   },
   icons: {

@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { SupplierGrid } from "@/features/suppliers/components/SupplierGrid";
+
+export const metadata: Metadata = { title: "All Suppliers" };
 
 export default function SuppliersPage() {
   return (

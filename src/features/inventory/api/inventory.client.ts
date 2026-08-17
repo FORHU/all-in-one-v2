@@ -6,6 +6,8 @@ import {
   StockSummaryResponseSchema,
   StockResponseSchema,
   TransactionsResponseSchema,
+  StockProductSearchResponseSchema,
+  StockVariantOptionsResponseSchema,
   type InventoryLocation,
 } from "../contracts/inventory.contract";
 
@@ -76,6 +78,20 @@ export const updateLocation = async (
 export const getVariantStock = async (variantId: string) => {
   const raw = await fetcher<unknown>(`/api/v2/inventory/variant/${variantId}`);
   return StockSummaryResponseSchema.parse(raw).data;
+};
+
+/** GET /api/v2/products/admin?search= — see StockProductSearchResultSchema for why this bypasses the products feature's own client. */
+export const searchProductsForStock = async (query: string) => {
+  const raw = await fetcher<unknown>(
+    `/api/v2/products/admin?search=${encodeURIComponent(query)}&limit=8`,
+  );
+  return StockProductSearchResponseSchema.parse(raw).data.items;
+};
+
+/** GET /api/v2/products/:productId/variants — see StockVariantOptionSchema for why this bypasses the products feature's own client. */
+export const getProductVariantsForStock = async (productId: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/products/${productId}/variants`);
+  return StockVariantOptionsResponseSchema.parse(raw).data.items;
 };
 
 export type SetStockInput = {

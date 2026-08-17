@@ -108,6 +108,47 @@ export const ProductVariantResponseSchema = z.object({
   data: AdminProductVariantSchema,
 });
 
+export const MediaTypeSchema = z.enum([
+  "IMAGE",
+  "GIF",
+  "VIDEO",
+  "AUDIO",
+  "DOCUMENT",
+  "ARCHIVE",
+  "OTHER",
+]);
+
+/**
+ * Ground-truthed against `AdminProductMediaDto`
+ * (all-in-one-v2-api/src/modules/catalog/product/dto/product-listing.dto.ts).
+ * Product-level gallery only — a `CatalogProductMedia` row tied to a specific
+ * variant instead is a separate, not-yet-built surface.
+ */
+export const AdminProductMediaSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  type: MediaTypeSchema,
+  altText: z.string().nullable(),
+  position: z.number(),
+  isPrimary: z.boolean(),
+});
+
+/** GET /api/v2/products/:productId/media */
+export const ProductMediaListResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(AdminProductMediaSchema),
+  }),
+});
+
+/** POST/PUT /api/v2/products/:productId/media(/:mediaId) */
+export const ProductMediaResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: AdminProductMediaSchema,
+});
+
 export const StatusCountsSchema = z.object({
   DRAFT: z.number(),
   READY: z.number(),
@@ -200,3 +241,5 @@ export type CategoryOption = z.infer<typeof CategoryOptionSchema>;
 export type StatusCounts = z.infer<typeof StatusCountsSchema>;
 export type BrandCount = z.infer<typeof BrandCountSchema>;
 export type AdminProductVariant = z.infer<typeof AdminProductVariantSchema>;
+export type MediaType = z.infer<typeof MediaTypeSchema>;
+export type AdminProductMedia = z.infer<typeof AdminProductMediaSchema>;

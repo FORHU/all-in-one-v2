@@ -287,7 +287,7 @@ export function RegisterForm() {
         Already have an account?{" "}
         <button
           type="button"
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/login")}
           className="font-semibold text-[var(--shop-accent-dark)] hover:underline"
         >
           Sign in

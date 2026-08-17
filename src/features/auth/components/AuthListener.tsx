@@ -23,7 +23,7 @@ export function AuthListener() {
       setUser(null);
       setRole("viewer");
       queryClient.clear();
-      router.push("/");
+      router.push("/login");
     };
 
     window.addEventListener("auth:unauthorized", handleUnauthorized);

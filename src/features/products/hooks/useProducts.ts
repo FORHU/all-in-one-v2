@@ -15,9 +15,14 @@ import {
   createProductVariant,
   updateProductVariant,
   deleteProductVariant,
+  getProductMedia,
+  createProductMedia,
+  updateProductMedia,
+  deleteProductMedia,
   type GetAdminProductsParams,
   type ProductWriteInput,
   type VariantWriteInput,
+  type MediaWriteInput,
 } from "../api/products.client";
 import { productsKeys } from "../api/products.keys";
 
@@ -159,6 +164,70 @@ export function useDeleteProductVariant(productId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: productsKeys.variants(productId),
+      });
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+    },
+  });
+}
+
+/** Only meaningful in edit mode — `enabled` is false while `productId` is empty (create mode). */
+export function useProductMedia(productId: string) {
+  return useSafeQuery({
+    queryKey: productsKeys.media(productId),
+    queryFn: () => getProductMedia(productId),
+    enabled: Boolean(productId),
+  });
+}
+
+/**
+ * Same reasoning as the variant mutations above: ProductFormModal updates its
+ * own local media list directly from each mutation's response, and also
+ * invalidates the products list — marking a gallery image primary rewrites
+ * the product's thumbnailUrl, which the admin listing displays.
+ */
+export function useCreateProductMedia(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: (input: MediaWriteInput) =>
+      createProductMedia(productId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: productsKeys.media(productId),
+      });
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+    },
+  });
+}
+
+export function useUpdateProductMedia(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: ({
+      mediaId,
+      input,
+    }: {
+      mediaId: string;
+      input: Partial<MediaWriteInput>;
+    }) => updateProductMedia(productId, mediaId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: productsKeys.media(productId),
+      });
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+    },
+  });
+}
+
+export function useDeleteProductMedia(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: (mediaId: string) => deleteProductMedia(productId, mediaId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: productsKeys.media(productId),
       });
       queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
     },

@@ -53,6 +53,14 @@ export const updateOrderStatus = async (
   return OrderDetailResponseSchema.parse(raw).data;
 };
 
+/** POST /api/v2/orders/:id/cancel — only allowed while no payment on the order is PAID. */
+export const cancelOrder = async (id: string): Promise<OrderDetail> => {
+  const raw = await fetcher<unknown>(`/api/v2/orders/${id}/cancel`, {
+    method: "POST",
+  });
+  return OrderDetailResponseSchema.parse(raw).data;
+};
+
 /** GET /api/v2/orders/:id/supplier-orders — the supplier-side fulfillments backing this order. */
 export const getSupplierOrders = async (
   orderId: string,

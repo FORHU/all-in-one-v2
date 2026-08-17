@@ -61,7 +61,7 @@ export default function AdminLayout({
     clearRefreshToken();
     setUser(null);
     setRole("viewer");
-    router.push("/");
+    router.push("/login");
   };
 
   return (

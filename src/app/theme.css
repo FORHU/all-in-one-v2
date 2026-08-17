@@ -31,6 +31,20 @@
   --shop-neutral: #8a7a55;
   --shop-neutral-bg: #f2eee6;
 
+  /* R-G-B channel mirrors of the tokens above that get used with a Tailwind
+     opacity modifier (bg-shop-ink/50 etc, registered in tailwind.config.ts)
+     — kept next to their hex source so the two can't drift apart. Plain
+     `#hex`/`rgba(...)` usages of the tokens above are untouched by this;
+     these only exist to make `/<alpha>` modifiers work. */
+  --shop-ink-rgb: 27 23 48;
+  --shop-ink-soft-rgb: 42 36 64;
+  --shop-surface-rgb: 255 255 255;
+  --shop-accent-rgb: 255 61 110;
+  --shop-band-text-rgb: 247 245 242;
+  --shop-danger-rgb: 224 41 90;
+  --shop-success-rgb: 26 127 78;
+  --shop-warning-rgb: 183 121 31;
+
   /* Tenant avatar identity colors — for recognizing *which* store, never for
      state. Kept out of the semantic status palette above on purpose: reusing
      --shop-success/--shop-warning/etc here would make a tenant's avatar look
@@ -139,4 +153,26 @@
 }
 .shop-scrollbar-dark::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.32);
+}
+
+/* Thin ink-tinted scrollbar for light (--shop-surface) surfaces — pairs with
+   .shop-scrollbar-dark above; the OS default scrollbar reads as heavy and
+   disconnected against modal/panel chrome like this. */
+.shop-scrollbar-light {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(27, 23, 48, 0.18) transparent;
+}
+.shop-scrollbar-light::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.shop-scrollbar-light::-webkit-scrollbar-track {
+  background: transparent;
+}
+.shop-scrollbar-light::-webkit-scrollbar-thumb {
+  background-color: rgba(27, 23, 48, 0.18);
+  border-radius: 9999px;
+}
+.shop-scrollbar-light::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(27, 23, 48, 0.32);
 }

@@ -6,6 +6,8 @@ import { notify } from "@/shared/lib/notify";
 import {
   getVariantStock,
   setStock,
+  searchProductsForStock,
+  getProductVariantsForStock,
   type SetStockInput,
 } from "../api/inventory.client";
 import { inventoryKeys } from "../api/inventory.keys";
@@ -18,6 +20,24 @@ export function useVariantStock(variantId: string) {
     queryKey: inventoryKeys.variantStock(tenantSlug, variantId),
     queryFn: () => getVariantStock(variantId),
     enabled: Boolean(tenantSlug) && Boolean(variantId),
+  });
+}
+
+/** Debounce the query string before enabling this — see StockLookupView. */
+export function useStockProductSearch(query: string) {
+  return useSafeQuery({
+    queryKey: [...inventoryKeys.all, "product-search", query] as const,
+    queryFn: () => searchProductsForStock(query),
+    enabled: query.trim().length >= 2,
+  });
+}
+
+/** Only meaningful once a product is picked — `enabled` is false before that. */
+export function useStockVariantOptions(productId: string) {
+  return useSafeQuery({
+    queryKey: [...inventoryKeys.all, "variant-options", productId] as const,
+    queryFn: () => getProductVariantsForStock(productId),
+    enabled: Boolean(productId),
   });
 }
 

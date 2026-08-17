@@ -8,8 +8,17 @@ import {
   ZoomIn as ZoomInIcon,
   CircleCheck as CircleCheckIcon,
 } from "lucide-react";
-import type { SupplierProductDetail } from "../contracts/product-sourcing.contract";
-import { formatPrice, stripHtml } from "../lib/presentation";
+import type {
+  SupplierProductDetail,
+  CategoryOption,
+} from "../contracts/product-sourcing.contract";
+import {
+  formatPrice,
+  stripHtml,
+  UNSELECTED_CATEGORY,
+} from "../lib/presentation";
+import { Modal } from "@/shared/components/Modal";
+import { Dropdown, type DropdownOption } from "@/shared/components/Dropdown";
 
 type SupplierProductPreviewProps = {
   externalId: string;
@@ -19,6 +28,9 @@ type SupplierProductPreviewProps = {
   onClose: () => void;
   onImport: () => void;
   isImporting: boolean;
+  categoryOptions: CategoryOption[] | undefined;
+  categoryId: string;
+  onCategoryChange: (id: string) => void;
 };
 
 function priceRangeLabel(detail: SupplierProductDetail): string {
@@ -42,6 +54,9 @@ export function SupplierProductPreview({
   onClose,
   onImport,
   isImporting,
+  categoryOptions,
+  categoryId,
+  onCategoryChange,
 }: SupplierProductPreviewProps) {
   const images = detail
     ? Array.from(
@@ -72,28 +87,49 @@ export function SupplierProductPreview({
   }, [isZoomed]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-y-auto rounded-xl bg-[var(--shop-surface)] p-6"
-        onClick={(e) => e.stopPropagation()}
+    <>
+      <Modal
+        onClose={onClose}
+        title="Product preview"
+        subtitle={`External ID ${externalId}`}
+        maxWidthClassName="max-w-3xl"
+        footer={
+          detail && !isLoading && !isError ? (
+            detail.alreadyImported ? (
+              <div
+                className="flex w-fit items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wide"
+                style={{
+                  color: "var(--shop-success)",
+                  backgroundColor: "var(--shop-success-bg)",
+                }}
+              >
+                <CircleCheckIcon className="h-4 w-4" />
+                Already in your catalog
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  type="button"
+                  onClick={onImport}
+                  disabled={isImporting || categoryId === UNSELECTED_CATEGORY}
+                  className="w-fit rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{ backgroundColor: "var(--shop-accent-dark)" }}
+                >
+                  {isImporting ? "Importing…" : "Import to catalog"}
+                </button>
+                {categoryId === UNSELECTED_CATEGORY && (
+                  <p
+                    className="text-[11px] font-medium"
+                    style={{ color: "var(--shop-danger)" }}
+                  >
+                    Select a category to enable import.
+                  </p>
+                )}
+              </div>
+            )
+          ) : undefined
+        }
       >
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
-            Preview — {externalId}
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close preview"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
-          >
-            <XIcon className="h-4 w-4" />
-          </button>
-        </div>
-
         {isLoading ? (
           <div className="flex items-center gap-2 py-8 text-sm text-[var(--shop-text-muted)]">
             <Loader2Icon className="h-4 w-4 animate-spin" />
@@ -179,6 +215,29 @@ export function SupplierProductPreview({
                 </p>
               )}
 
+              {!detail.alreadyImported && (
+                <div>
+                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
+                    Category
+                  </label>
+                  <Dropdown
+                    value={categoryId}
+                    options={[
+                      {
+                        value: UNSELECTED_CATEGORY,
+                        label: "Select a category…",
+                      },
+                      { value: "", label: "No category" },
+                      ...(categoryOptions ?? []).map(
+                        (c): DropdownOption => ({ value: c.id, label: c.name }),
+                      ),
+                    ]}
+                    onChange={onCategoryChange}
+                    aria-label="Category"
+                  />
+                </div>
+              )}
+
               {detail.description && (
                 // CJ's description is raw HTML — rendered as plain text (not
                 // dangerouslySetInnerHTML) since it's untrusted supplier content.
@@ -223,33 +282,10 @@ export function SupplierProductPreview({
                   </div>
                 </div>
               )}
-
-              {detail.alreadyImported ? (
-                <div
-                  className="mt-2 flex w-fit items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wide"
-                  style={{
-                    color: "var(--shop-success)",
-                    backgroundColor: "var(--shop-success-bg)",
-                  }}
-                >
-                  <CircleCheckIcon className="h-4 w-4" />
-                  Already in your catalog
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onImport}
-                  disabled={isImporting}
-                  className="mt-2 w-fit rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-50"
-                  style={{ backgroundColor: "var(--shop-accent-dark)" }}
-                >
-                  {isImporting ? "Importing…" : "Import to catalog"}
-                </button>
-              )}
             </div>
           </div>
         )}
-      </div>
+      </Modal>
 
       {isZoomed && images.length > 0 && (
         <div
@@ -273,6 +309,6 @@ export function SupplierProductPreview({
           />
         </div>
       )}
-    </div>
+    </>
   );
 }

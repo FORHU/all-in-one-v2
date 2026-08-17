@@ -1,32 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { X as XIcon, Plus as PlusIcon, Check as CheckIcon } from "lucide-react";
+import { X as XIcon, Plus as PlusIcon, Star as StarIcon } from "lucide-react";
+import { Modal } from "@/shared/components/Modal";
 import {
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
   useCategoryOptions,
-  useProductVariants,
-  useCreateProductVariant,
-  useUpdateProductVariant,
-  useDeleteProductVariant,
+  useProductMedia,
+  useCreateProductMedia,
+  useUpdateProductMedia,
+  useDeleteProductMedia,
 } from "../hooks/useProducts";
 import { usePricingRules } from "../hooks/usePricingRules";
 import {
   ProductStatusSchema,
   ProductVisibilitySchema,
+  MediaTypeSchema,
   type AdminProduct,
-  type AdminProductVariant,
+  type AdminProductMedia,
+  type MediaType,
   type ProductStatus,
   type ProductVisibility,
 } from "../contracts/products.contract";
 import {
-  createProductVariant,
+  createProductMedia,
   type ProductWriteInput,
-  type VariantWriteInput,
+  type MediaWriteInput,
 } from "../api/products.client";
 import { productsKeys } from "../api/products.keys";
 import { notify } from "@/shared/lib/notify";
@@ -47,66 +49,68 @@ const VISIBILITY_OPTIONS: DropdownOption[] =
     label: VISIBILITY_LABELS[v],
   }));
 
+const MEDIA_TYPE_OPTIONS: DropdownOption[] = MediaTypeSchema.options.map(
+  (t) => ({
+    value: t,
+    label: t.charAt(0) + t.slice(1).toLowerCase(),
+  }),
+);
+
 const NO_CATEGORY = "";
 const NO_PRICING_RULE = "";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
 
+// No `w-full` here (unlike `inputClass`) — both call sites are flex-row
+// items that set their own width (`flex-1` / `w-24`), and a trailing
+// `w-full` would win the cascade over those regardless of class-string
+// order (Tailwind's width utilities are emitted in a fixed stylesheet
+// order, not source order), stretching the row and overflowing it.
 const smallInputClass =
-  "w-full rounded-md border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2 py-1.5 text-[11px] text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
+  "rounded-md border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2 py-1.5 text-[11px] text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
 
 const labelClass =
   "mb-1.5 block text-[10.5px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]";
 
-/** Local editable mirror of a variant row — `id` is only set once persisted (edit mode). */
-type VariantRow = {
+/** Local editable mirror of a media row — `id` is only set once persisted (edit mode). */
+type MediaRow = {
   key: string;
   id?: string;
-  title: string;
-  sku: string;
-  price: string;
-  compareAtPrice: string;
-  color: string;
-  size: string;
-  stockAvailable?: number;
+  url: string;
+  type: MediaType;
+  altText: string;
+  isPrimary: boolean;
 };
 
-function toVariantRow(v: AdminProductVariant): VariantRow {
+function toMediaRow(m: AdminProductMedia): MediaRow {
   return {
-    key: v.id,
-    id: v.id,
-    title: v.title,
-    sku: v.sku ?? "",
-    price: v.price.toString(),
-    compareAtPrice: v.compareAtPrice?.toString() ?? "",
-    color: v.color ?? "",
-    size: v.size ?? "",
-    stockAvailable: v.stockAvailable,
+    key: m.id,
+    id: m.id,
+    url: m.url,
+    type: m.type,
+    altText: m.altText ?? "",
+    isPrimary: m.isPrimary,
   };
 }
 
-function blankVariantRow(): VariantRow {
+function blankMediaRow(): MediaRow {
   return {
     key: crypto.randomUUID(),
-    title: "",
-    sku: "",
-    price: "",
-    compareAtPrice: "",
-    color: "",
-    size: "",
+    url: "",
+    type: "IMAGE",
+    altText: "",
+    isPrimary: false,
   };
 }
 
-function toVariantWriteInput(row: VariantRow): VariantWriteInput {
+function toMediaWriteInput(row: MediaRow, position: number): MediaWriteInput {
   return {
-    title: row.title.trim(),
-    price: Number(row.price) || 0,
-    compareAtPrice:
-      row.compareAtPrice.trim() === "" ? null : Number(row.compareAtPrice),
-    sku: row.sku.trim() || null,
-    color: row.color.trim() || null,
-    size: row.size.trim() || null,
+    url: row.url.trim(),
+    type: row.type,
+    altText: row.altText.trim() || null,
+    position,
+    isPrimary: row.isPrimary,
   };
 }
 
@@ -187,77 +191,128 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
     setThumbnailUrl(product.thumbnailUrl ?? "");
   }, [product]);
 
-  // Local mirror of variant rows — edit mode seeds this once from the fetched
+  // Local mirror of media rows — edit mode seeds this once from the fetched
   // list (below), then add/edit/remove update it directly from each
   // mutation's own response, same reasoning as CollectionFormModal's `items`:
   // re-deriving from a live-refetching query would risk clobbering an
   // in-progress edit mid-typing. Create mode starts empty; everything in it
   // is "pending" until the product itself is created.
-  const [variants, setVariants] = useState<VariantRow[]>([]);
-  const [variantsSeeded, setVariantsSeeded] = useState(false);
+  const [media, setMedia] = useState<MediaRow[]>([]);
+  const [mediaSeeded, setMediaSeeded] = useState(false);
+  // Which row is mid-autosave — drives a small inline spinner instead of a
+  // page-wide pending state, since multiple rows can never save at once
+  // (each save is triggered by leaving that row's own field).
+  const [savingMediaKey, setSavingMediaKey] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: fetchedVariants } = useProductVariants(product?.id ?? "");
+  const { data: fetchedMedia } = useProductMedia(product?.id ?? "");
   useEffect(() => {
-    if (isEdit && fetchedVariants && !variantsSeeded) {
-      setVariants(fetchedVariants.map(toVariantRow));
-      setVariantsSeeded(true);
+    if (isEdit && fetchedMedia && !mediaSeeded) {
+      setMedia(fetchedMedia.map(toMediaRow));
+      setMediaSeeded(true);
     }
-  }, [isEdit, fetchedVariants, variantsSeeded]);
+  }, [isEdit, fetchedMedia, mediaSeeded]);
 
-  const { mutate: createVariant, isPending: isCreatingVariant } =
-    useCreateProductVariant(product?.id ?? "");
-  const { mutate: updateVariant, isPending: isUpdatingVariant } =
-    useUpdateProductVariant(product?.id ?? "");
-  const { mutate: removeVariant, isPending: isRemovingVariant } =
-    useDeleteProductVariant(product?.id ?? "");
+  const { mutate: createMedia } = useCreateProductMedia(product?.id ?? "");
+  const { mutate: updateMedia } = useUpdateProductMedia(product?.id ?? "");
+  const { mutate: removeMedia, isPending: isRemovingMedia } =
+    useDeleteProductMedia(product?.id ?? "");
 
-  const handleAddVariant = () => {
-    setVariants((prev) => [...prev, blankVariantRow()]);
+  const handleAddMedia = () => {
+    setMedia((prev) => [...prev, blankMediaRow()]);
   };
 
-  const handleRemoveVariant = (row: VariantRow) => {
+  const handleRemoveMedia = (row: MediaRow) => {
     if (isEdit && row.id) {
-      removeVariant(row.id, {
+      removeMedia(row.id, {
         onSuccess: () =>
-          setVariants((prev) => prev.filter((r) => r.key !== row.key)),
+          setMedia((prev) => prev.filter((r) => r.key !== row.key)),
       });
       return;
     }
-    setVariants((prev) => prev.filter((r) => r.key !== row.key));
+    setMedia((prev) => prev.filter((r) => r.key !== row.key));
   };
 
-  const handleVariantFieldChange = (
+  const handleMediaFieldChange = (
     key: string,
-    field: keyof Omit<VariantRow, "key" | "id" | "stockAvailable">,
+    field: "url" | "altText",
     value: string,
   ) => {
-    setVariants((prev) =>
+    setMedia((prev) =>
       prev.map((r) => (r.key === key ? { ...r, [field]: value } : r)),
     );
   };
 
-  /** Edit mode only — create mode's rows are all attached in bulk after the product itself is created. */
-  const handleSaveVariant = (row: VariantRow) => {
-    const input = toVariantWriteInput(row);
+  /**
+   * Persists one row — edit mode only (create mode's rows are all attached
+   * in bulk after the product itself is created, see handleSubmit). Fires
+   * automatically from field blur/change instead of a per-row Save button,
+   * so editing 12+ images doesn't mean 12+ extra clicks.
+   */
+  const handleSaveMedia = (row: MediaRow) => {
+    if (!isEdit || !row.url.trim()) return;
+
+    const position = media.findIndex((r) => r.key === row.key);
+    const input = toMediaWriteInput(row, position);
+    setSavingMediaKey(row.key);
+
     if (row.id) {
-      updateVariant(
-        { variantId: row.id, input },
+      updateMedia(
+        { mediaId: row.id, input },
         {
           onSuccess: (updated) =>
-            setVariants((prev) =>
-              prev.map((r) => (r.key === row.key ? toVariantRow(updated) : r)),
+            setMedia((prev) =>
+              prev.map((r) => (r.key === row.key ? toMediaRow(updated) : r)),
             ),
+          onSettled: () => setSavingMediaKey(null),
         },
       );
       return;
     }
-    createVariant(input, {
+    createMedia(input, {
       onSuccess: (created) =>
-        setVariants((prev) =>
-          prev.map((r) => (r.key === row.key ? toVariantRow(created) : r)),
+        setMedia((prev) =>
+          prev.map((r) => (r.key === row.key ? toMediaRow(created) : r)),
         ),
+      onSettled: () => setSavingMediaKey(null),
     });
+  };
+
+  const handleMediaTypeChange = (row: MediaRow, type: MediaType) => {
+    const updated = { ...row, type };
+    setMedia((prev) => prev.map((r) => (r.key === row.key ? updated : r)));
+    handleSaveMedia(updated);
+  };
+
+  /**
+   * Marks this row primary and unmarks every other row — the backend does
+   * the same unset-others-then-set step and also mirrors the URL onto the
+   * product's plain `thumbnailUrl` field, so this keeps that field in sync
+   * in the currently open form too.
+   */
+  const handleSetPrimary = (row: MediaRow) => {
+    if (isEdit && row.id) {
+      updateMedia(
+        { mediaId: row.id, input: { isPrimary: true } },
+        {
+          onSuccess: (updated) => {
+            setMedia((prev) =>
+              prev.map((r) =>
+                r.key === row.key
+                  ? toMediaRow(updated)
+                  : { ...r, isPrimary: false },
+              ),
+            );
+            setThumbnailUrl(updated.url);
+          },
+        },
+      );
+      return;
+    }
+    setMedia((prev) =>
+      prev.map((r) => ({ ...r, isPrimary: r.key === row.key })),
+    );
+    setThumbnailUrl(row.url);
   };
 
   const { data: categoryOptions } = useCategoryOptions();
@@ -335,21 +390,21 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
 
     create(buildInput(), {
       onSuccess: async (created) => {
-        const pending = variants.filter((r) => r.title.trim());
-        if (pending.length === 0) {
+        const pendingMedia = media.filter((r) => r.url.trim());
+        if (pendingMedia.length === 0) {
           onClose();
           return;
         }
         try {
           await Promise.all(
-            pending.map((r) =>
-              createProductVariant(created.id, toVariantWriteInput(r)),
+            pendingMedia.map((r, i) =>
+              createProductMedia(created.id, toMediaWriteInput(r, i)),
             ),
           );
           queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
         } catch {
           notify.error(
-            "Product created, but some variants couldn't be attached. Open it again to retry.",
+            "Product created, but some media couldn't be attached. Open it again to retry.",
           );
         }
         onClose();
@@ -365,379 +420,324 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--shop-ink)]/50 p-6"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[88vh] w-full max-w-[560px] overflow-auto rounded-2xl border border-[var(--shop-border)] bg-[var(--shop-surface)] shadow-xl"
-      >
-        <div className="flex items-center justify-between border-b border-[var(--shop-border)] p-6">
-          <p className="shop-display text-[17px] font-semibold text-[var(--shop-text)]">
-            {isEdit ? "Edit product" : "New product"}
-          </p>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-[var(--shop-bg)] text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
-          >
-            <XIcon className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 p-6">
-          <div className="col-span-2">
-            <label className={labelClass}>Title</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Product title"
-              disabled={isPending}
-              className={inputClass}
-            />
-            {errors.title && (
-              <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
-                {errors.title}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className={labelClass}>Slug</label>
-            <input
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder={title || "auto-generated from title"}
-              disabled={isPending}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Brand</label>
-            <input
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              placeholder="Brand"
-              disabled={isPending}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Category</label>
-            <Dropdown
-              value={categoryId}
-              options={categoryDropdownOptions}
-              onChange={setCategoryId}
-              disabled={isPending}
-              aria-label="Category"
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Pricing rule</label>
-            <Dropdown
-              value={pricingRuleId}
-              options={pricingRuleDropdownOptions}
-              onChange={(v) => {
-                setPricingRuleId(v);
-                setPricingRuleTouched(true);
-              }}
-              disabled={isPending}
-              aria-label="Pricing rule"
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Status</label>
-            <Dropdown
-              value={status}
-              options={STATUS_OPTIONS}
-              onChange={(v) => setStatus(v as ProductStatus)}
-              disabled={isPending}
-              aria-label="Status"
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Visibility</label>
-            <Dropdown
-              value={visibility}
-              options={VISIBILITY_OPTIONS}
-              onChange={(v) => setVisibility(v as ProductVisibility)}
-              disabled={isPending}
-              aria-label="Visibility"
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Price</label>
-            <input
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="0.00"
-              inputMode="decimal"
-              disabled={isPending}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Sale price</label>
-            <input
-              value={salePrice}
-              onChange={(e) => setSalePrice(e.target.value)}
-              placeholder="0.00"
-              inputMode="decimal"
-              disabled={isPending}
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Compare-at price</label>
-            <input
-              value={compareAtPrice}
-              onChange={(e) => setCompareAtPrice(e.target.value)}
-              placeholder="0.00"
-              inputMode="decimal"
-              disabled={isPending}
-              className={inputClass}
-            />
-          </div>
-
-          <div className="col-span-2">
-            <label className={labelClass}>Thumbnail URL</label>
-            <input
-              value={thumbnailUrl}
-              onChange={(e) => setThumbnailUrl(e.target.value)}
-              placeholder="https://…"
-              disabled={isPending}
-              className={inputClass}
-            />
-          </div>
-
-          <div className="col-span-2 border-t border-[var(--shop-border)] pt-5">
-            <label className={labelClass}>Variants ({variants.length})</label>
-            <p className="-mt-1 mb-3 text-[11px] text-[var(--shop-text-muted)]">
-              {isEdit
-                ? "Fill in a variant's details and press Save to add or update it — removing one is immediate."
-                : "Variants added here are created once you create the product below."}
+    <Modal
+      onClose={onClose}
+      title={isEdit ? "Edit product" : "New product"}
+      subtitle={isEdit ? product?.title : undefined}
+      maxWidthClassName="max-w-[760px]"
+      footer={
+        confirmingDelete ? (
+          <div className="flex items-center gap-3 rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4">
+            <p className="flex-1 text-[13px] font-semibold text-[var(--shop-danger)]">
+              Delete &quot;{product?.title}&quot;? This can&apos;t be undone.
             </p>
-
-            {variants.length === 0 ? (
-              <p className="text-xs text-[var(--shop-text-muted)]">
-                No variants yet.
-              </p>
-            ) : (
-              <div className="mb-3 max-h-64 space-y-2 overflow-y-auto">
-                {variants.map((row) => {
-                  const canSave = row.title.trim() && row.price.trim() !== "";
-                  const isSavingThisRow =
-                    isCreatingVariant || isUpdatingVariant;
-                  return (
-                    <div
-                      key={row.key}
-                      className="rounded-lg border border-[var(--shop-border)] p-2.5"
-                    >
-                      <div className="mb-1.5 flex items-center gap-2">
-                        <input
-                          value={row.title}
-                          onChange={(e) =>
-                            handleVariantFieldChange(
-                              row.key,
-                              "title",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Variant title (e.g. Red / M)"
-                          disabled={isPending}
-                          className={smallInputClass}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveVariant(row)}
-                          disabled={isEdit && isRemovingVariant}
-                          aria-label={`Remove ${row.title || "variant"}`}
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-danger-bg)] hover:text-[var(--shop-danger)] disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          <XIcon className="h-3 w-3" />
-                        </button>
-                      </div>
-
-                      <div className="mb-1.5 grid grid-cols-3 gap-1.5">
-                        <input
-                          value={row.sku}
-                          onChange={(e) =>
-                            handleVariantFieldChange(
-                              row.key,
-                              "sku",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="SKU"
-                          disabled={isPending}
-                          className={smallInputClass}
-                        />
-                        <input
-                          value={row.price}
-                          onChange={(e) =>
-                            handleVariantFieldChange(
-                              row.key,
-                              "price",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Price"
-                          inputMode="decimal"
-                          disabled={isPending}
-                          className={smallInputClass}
-                        />
-                        <input
-                          value={row.compareAtPrice}
-                          onChange={(e) =>
-                            handleVariantFieldChange(
-                              row.key,
-                              "compareAtPrice",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Compare-at"
-                          inputMode="decimal"
-                          disabled={isPending}
-                          className={smallInputClass}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <input
-                          value={row.color}
-                          onChange={(e) =>
-                            handleVariantFieldChange(
-                              row.key,
-                              "color",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Color"
-                          disabled={isPending}
-                          className={smallInputClass}
-                        />
-                        <input
-                          value={row.size}
-                          onChange={(e) =>
-                            handleVariantFieldChange(
-                              row.key,
-                              "size",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Size"
-                          disabled={isPending}
-                          className={smallInputClass}
-                        />
-                      </div>
-
-                      {isEdit && (
-                        <div className="mt-2 flex items-center justify-between">
-                          {row.stockAvailable !== undefined ? (
-                            <Link
-                              href="/inventory/stock"
-                              className="text-[11px] text-[var(--shop-text-muted)] hover:text-[var(--shop-accent)] hover:underline"
-                            >
-                              {row.stockAvailable} in stock — manage →
-                            </Link>
-                          ) : (
-                            <span />
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleSaveVariant(row)}
-                            disabled={isPending || !canSave}
-                            className="flex items-center gap-1 rounded-md border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2.5 py-1 text-[11px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)] disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            <CheckIcon className="h-3 w-3" />
-                            {isSavingThisRow ? "Saving…" : "Save"}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
             <button
               type="button"
-              onClick={handleAddVariant}
+              onClick={() => setConfirmingDelete(false)}
               disabled={isPending}
-              className="flex items-center gap-1.5 rounded-lg border border-dashed border-[var(--shop-border)] px-3 py-2 text-[11px] font-bold text-[var(--shop-text-muted)] hover:border-[var(--shop-accent)] hover:text-[var(--shop-text)] disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
             >
-              <PlusIcon className="h-3 w-3" strokeWidth={2.5} />
-              Add variant
+              Keep it
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              disabled={isPending}
+              className="rounded-lg bg-[var(--shop-danger)] px-4 py-2.5 text-[13px] font-bold text-white hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isDeleting ? "Deleting…" : "Delete permanently"}
             </button>
           </div>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            {isEdit && (
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                disabled={isPending}
+                className="rounded-lg border border-[var(--shop-danger)]/30 px-4 py-2.5 text-[13px] font-bold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Delete product
+              </button>
+            )}
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="product-form"
+              disabled={isPending || !dirty || !title.trim()}
+              className="rounded-lg bg-[var(--shop-ink)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-bg)] hover:bg-[var(--shop-ink-soft)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isCreating || isUpdating
+                ? "Saving…"
+                : isEdit
+                  ? "Save changes"
+                  : "Create product"}
+            </button>
+          </div>
+        )
+      }
+    >
+      <form
+        id="product-form"
+        onSubmit={handleSubmit}
+        className="grid grid-cols-2 gap-4"
+      >
+        <div className="col-span-2">
+          <label className={labelClass}>Title</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Product title"
+            disabled={isPending}
+            className={inputClass}
+          />
+          {errors.title && (
+            <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
+              {errors.title}
+            </p>
+          )}
+        </div>
 
-          {confirmingDelete ? (
-            <div className="col-span-2 flex items-center gap-3 rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4">
-              <p className="flex-1 text-[13px] font-semibold text-[var(--shop-danger)]">
-                Delete &quot;{product?.title}&quot;? This can&apos;t be undone.
-              </p>
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(false)}
-                disabled={isPending}
-                className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
-              >
-                Keep it
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={isPending}
-                className="rounded-lg bg-[var(--shop-danger)] px-4 py-2.5 text-[13px] font-bold text-white hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isDeleting ? "Deleting…" : "Delete permanently"}
-              </button>
-            </div>
+        <div>
+          <label className={labelClass}>Slug</label>
+          <input
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            placeholder={title || "auto-generated from title"}
+            disabled={isPending}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Brand</label>
+          <input
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            placeholder="Brand"
+            disabled={isPending}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Category</label>
+          <Dropdown
+            value={categoryId}
+            options={categoryDropdownOptions}
+            onChange={setCategoryId}
+            disabled={isPending}
+            aria-label="Category"
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Pricing rule</label>
+          <Dropdown
+            value={pricingRuleId}
+            options={pricingRuleDropdownOptions}
+            onChange={(v) => {
+              setPricingRuleId(v);
+              setPricingRuleTouched(true);
+            }}
+            disabled={isPending}
+            aria-label="Pricing rule"
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Status</label>
+          <Dropdown
+            value={status}
+            options={STATUS_OPTIONS}
+            onChange={(v) => setStatus(v as ProductStatus)}
+            disabled={isPending}
+            aria-label="Status"
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Visibility</label>
+          <Dropdown
+            value={visibility}
+            options={VISIBILITY_OPTIONS}
+            onChange={(v) => setVisibility(v as ProductVisibility)}
+            disabled={isPending}
+            aria-label="Visibility"
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Price</label>
+          <input
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="0.00"
+            inputMode="decimal"
+            disabled={isPending}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Sale price</label>
+          <input
+            value={salePrice}
+            onChange={(e) => setSalePrice(e.target.value)}
+            placeholder="0.00"
+            inputMode="decimal"
+            disabled={isPending}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Compare-at price</label>
+          <input
+            value={compareAtPrice}
+            onChange={(e) => setCompareAtPrice(e.target.value)}
+            placeholder="0.00"
+            inputMode="decimal"
+            disabled={isPending}
+            className={inputClass}
+          />
+        </div>
+
+        <div className="col-span-2">
+          <label className={labelClass}>Thumbnail URL</label>
+          <input
+            value={thumbnailUrl}
+            onChange={(e) => setThumbnailUrl(e.target.value)}
+            placeholder="https://…"
+            disabled={isPending}
+            className={inputClass}
+          />
+        </div>
+
+        <div className="col-span-2 border-t border-[var(--shop-border)] pt-5">
+          <label className={labelClass}>Media gallery ({media.length})</label>
+          <p className="-mt-1 mb-3 text-[11px] text-[var(--shop-text-muted)]">
+            {isEdit
+              ? "Changes save as you leave a field. The starred image is also used as the thumbnail above."
+              : "Media added here is attached once you create the product below."}
+          </p>
+
+          {media.length === 0 ? (
+            <p className="text-xs text-[var(--shop-text-muted)]">
+              No media yet.
+            </p>
           ) : (
-            <div className="col-span-2 flex items-center gap-2.5 border-t border-[var(--shop-border)] pt-5">
-              {isEdit && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(true)}
-                  disabled={isPending}
-                  className="rounded-lg border border-[var(--shop-danger)]/30 px-4 py-2.5 text-[13px] font-bold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)] disabled:cursor-not-allowed disabled:opacity-40"
+            <div className="shop-scrollbar-light mb-3 max-h-72 space-y-1.5 overflow-y-auto pr-1">
+              {media.map((row) => (
+                <div
+                  key={row.key}
+                  className="flex items-center gap-1.5 rounded-lg border border-[var(--shop-border)] p-1.5"
                 >
-                  Delete product
-                </button>
-              )}
-              <div className="flex-1" />
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isPending}
-                className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isPending || !dirty || !title.trim()}
-                className="rounded-lg bg-[var(--shop-ink)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-bg)] hover:bg-[var(--shop-ink-soft)] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isCreating || isUpdating
-                  ? "Saving…"
-                  : isEdit
-                    ? "Save changes"
-                    : "Create product"}
-              </button>
+                  {row.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- product-hosted image, not a local asset next/image can optimize
+                    <img
+                      src={row.url}
+                      alt=""
+                      className="h-9 w-9 shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="h-9 w-9 shrink-0 rounded-md bg-[var(--shop-bg-soft)]" />
+                  )}
+
+                  <input
+                    value={row.url}
+                    onChange={(e) =>
+                      handleMediaFieldChange(row.key, "url", e.target.value)
+                    }
+                    onBlur={() => handleSaveMedia(row)}
+                    placeholder="https://…"
+                    disabled={isPending}
+                    className={`${smallInputClass} min-w-0 flex-1`}
+                  />
+
+                  <input
+                    value={row.altText}
+                    onChange={(e) =>
+                      handleMediaFieldChange(row.key, "altText", e.target.value)
+                    }
+                    onBlur={() => handleSaveMedia(row)}
+                    placeholder="Alt text"
+                    disabled={isPending}
+                    className={`${smallInputClass} w-24 shrink-0`}
+                  />
+
+                  <Dropdown
+                    value={row.type}
+                    options={MEDIA_TYPE_OPTIONS}
+                    onChange={(v) => handleMediaTypeChange(row, v as MediaType)}
+                    disabled={isPending}
+                    size="sm"
+                    className="w-24 shrink-0"
+                    aria-label="Media type"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => handleSetPrimary(row)}
+                    disabled={isPending || row.isPrimary}
+                    aria-label={
+                      row.isPrimary ? "Primary image" : "Set as primary"
+                    }
+                    title={row.isPrimary ? "Primary image" : "Set as primary"}
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md disabled:cursor-not-allowed ${
+                      row.isPrimary
+                        ? "text-[var(--shop-accent)]"
+                        : "text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg)] hover:text-[var(--shop-text)]"
+                    }`}
+                  >
+                    <StarIcon
+                      className="h-3.5 w-3.5"
+                      fill={row.isPrimary ? "currentColor" : "none"}
+                    />
+                  </button>
+
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center">
+                    {savingMediaKey === row.key ? (
+                      <span
+                        aria-label="Saving"
+                        className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--shop-border)] border-t-[var(--shop-accent)]"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMedia(row)}
+                        disabled={isEdit && isRemovingMedia}
+                        aria-label="Remove media"
+                        className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-danger-bg)] hover:text-[var(--shop-danger)] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <XIcon className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-        </form>
-      </div>
-    </div>
+
+          <button
+            type="button"
+            onClick={handleAddMedia}
+            disabled={isPending}
+            className="flex items-center gap-1.5 rounded-lg border border-dashed border-[var(--shop-border)] px-3 py-2 text-[11px] font-bold text-[var(--shop-text-muted)] hover:border-[var(--shop-accent)] hover:text-[var(--shop-text)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <PlusIcon className="h-3 w-3" strokeWidth={2.5} />
+            Add media
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

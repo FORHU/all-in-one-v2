@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SupplierProductSearch } from "@/features/product-sourcing/components/SupplierProductSearch";
 import {
   useSupplierSearch,
   useSupplierProductDetail,
   useImportProduct,
+  useCategoryOptions,
   SUPPLIER_OPTIONS,
   type SupplierOptionId,
 } from "@/features/product-sourcing/hooks/useProductSourcing";
+import { UNSELECTED_CATEGORY } from "@/features/product-sourcing/lib/presentation";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -22,6 +24,7 @@ export default function ToolsPage() {
   const [selectedExternalId, setSelectedExternalId] = useState<string | null>(
     null,
   );
+  const [categoryId, setCategoryId] = useState(UNSELECTED_CATEGORY);
 
   // Debounce free-text search so we don't fire a request per keystroke —
   // each search hits the supplier's live API, not a local index.
@@ -35,7 +38,16 @@ export default function ToolsPage() {
   useEffect(() => {
     setPage(1);
     setSelectedExternalId(null);
+    setCategoryId(UNSELECTED_CATEGORY);
   }, [debouncedQuery, supplierId]);
+
+  // A different product selected within the same search results also resets
+  // the category choice — it shouldn't carry over from whatever was picked
+  // for the last previewed product, and re-blocks import until the admin
+  // actively chooses (or re-confirms) a category for this one.
+  useEffect(() => {
+    setCategoryId(UNSELECTED_CATEGORY);
+  }, [selectedExternalId]);
 
   const {
     data: results,
@@ -53,6 +65,24 @@ export default function ToolsPage() {
     isLoading: isDetailLoading,
     isError: isDetailError,
   } = useSupplierProductDetail(supplierId, selectedExternalId);
+
+  const { data: categoryOptions } = useCategoryOptions();
+
+  // Best-guess default: once the preview's detail and the tenant's category
+  // list have both loaded, pre-select the option whose name matches the
+  // supplier's own category label (case-insensitively) — but only once per
+  // selected product, so it doesn't clobber an admin's manual choice.
+  const defaultAppliedForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedExternalId || !detail?.categoryName || !categoryOptions)
+      return;
+    if (defaultAppliedForRef.current === selectedExternalId) return;
+    defaultAppliedForRef.current = selectedExternalId;
+    const match = categoryOptions.find(
+      (c) => c.name.toLowerCase() === detail.categoryName?.toLowerCase(),
+    );
+    if (match) setCategoryId(match.id);
+  }, [selectedExternalId, detail?.categoryName, categoryOptions]);
 
   const importMutation = useImportProduct();
 
@@ -87,9 +117,19 @@ export default function ToolsPage() {
         isDetailLoading={isDetailLoading}
         isDetailError={isDetailError}
         onImport={(externalId) =>
-          importMutation.mutate({ supplierId, externalId })
+          importMutation.mutate({
+            supplierId,
+            externalId,
+            // Only reachable once the Import button is enabled, which
+            // requires categoryId to have moved off UNSELECTED_CATEGORY —
+            // "" is the admin's explicit "No category" choice at that point.
+            categoryId: categoryId === "" ? null : categoryId,
+          })
         }
         isImporting={importMutation.isPending}
+        categoryOptions={categoryOptions}
+        categoryId={categoryId}
+        onCategoryChange={setCategoryId}
       />
     </div>
   );

@@ -9,4 +9,6 @@ export const productsKeys = {
     [...productsKeys.lists(), tenantSlug, params] as const,
   variants: (productId: string) =>
     [...productsKeys.all, "variants", productId] as const,
+  media: (productId: string) =>
+    [...productsKeys.all, "media", productId] as const,
 };

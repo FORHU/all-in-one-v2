@@ -1,10 +1,12 @@
 import { useSafeQuery } from "@/shared/query/useSafeQuery";
 import { useSafeMutation } from "@/shared/query/useSafeMutation";
 import { notify } from "@/shared/lib/notify";
+import { useTenantStore } from "@/shared/tenant/tenant.store";
 import {
   searchSupplierProducts,
   getSupplierProduct,
   importProduct,
+  getCategoryOptions,
 } from "../api/product-sourcing.client";
 import { productSourcingKeys } from "../api/product-sourcing.keys";
 
@@ -43,16 +45,33 @@ export function useSupplierProductDetail(
   });
 }
 
+/** The tenant's real categories, for the import preview's category dropdown. */
+export function useCategoryOptions() {
+  const tenantSlug = useTenantStore((s) => s.tenantSlug);
+
+  return useSafeQuery({
+    queryKey: [
+      ...productSourcingKeys.all,
+      "category-options",
+      tenantSlug,
+    ] as const,
+    queryFn: () => getCategoryOptions(),
+    enabled: Boolean(tenantSlug),
+  });
+}
+
 /** Import the previewed product into the local catalog. */
 export function useImportProduct() {
   return useSafeMutation({
     mutationFn: ({
       supplierId,
       externalId,
+      categoryId,
     }: {
       supplierId: string;
       externalId: string;
-    }) => importProduct({ supplierId, externalId }),
+      categoryId?: string | null;
+    }) => importProduct({ supplierId, externalId, categoryId }),
     onSuccess: (product) => {
       notify.success(`Imported "${product.title}" into the catalog.`);
     },

@@ -34,6 +34,17 @@ export function formatMoney(amount: string, currency: string): string {
   );
 }
 
+// Matches what CJ/Printful-style suppliers' return reasons actually look
+// like in practice — not a generic free-text field. Shared by the "start a
+// return" form and the refund form, so the same vocabulary shows up in both.
+export const RETURN_REASON_OPTIONS = [
+  { value: "Damaged or defective", label: "Damaged or defective" },
+  { value: "Not as described", label: "Not as described" },
+  { value: "Never arrived", label: "Never arrived" },
+  { value: "Changed mind", label: "Changed mind" },
+  { value: "Other", label: "Other" },
+];
+
 export function customerLabel(customer: {
   email: string;
   firstName: string | null;

@@ -1,77 +1,193 @@
-"use client";
+import type { Metadata } from "next";
+import Link from "next/link";
+import {
+  LayoutDashboard as LayoutDashboardIcon,
+  Package as PackageIcon,
+  ShoppingCart as ShoppingCartIcon,
+  Truck as TruckIcon,
+  Settings as SettingsIcon,
+} from "lucide-react";
 
-import { LoginForm } from "@/features/auth/components/LoginForm";
+export const metadata: Metadata = {
+  title: "Every Store. One Panel.",
+  description:
+    "Orders, catalog, suppliers and marketing across every storefront you run — synced automatically and managed from a single dashboard.",
+};
 
-export default function LoginPage() {
+const CAPABILITIES = [
+  "Multi-store orders",
+  "Supplier sync",
+  "Unified catalog",
+  "AI marketing tools",
+];
+
+const MOCK_NAV_ICONS = [
+  LayoutDashboardIcon,
+  PackageIcon,
+  ShoppingCartIcon,
+  TruckIcon,
+  SettingsIcon,
+];
+
+const MOCK_CHART_BARS = [40, 65, 35, 80, 55, 92, 50];
+
+const MOCK_ROWS = [
+  { status: "success" as const },
+  { status: "warning" as const },
+  { status: "success" as const },
+];
+
+function DashboardMockup() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center p-4"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle at 15% 20%, rgba(255,61,110,0.06), transparent 45%), radial-gradient(circle at 85% 80%, rgba(27,23,48,0.05), transparent 45%)",
-      }}
-    >
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-[var(--shop-border)] bg-[var(--shop-surface)] shadow-xl md:grid-cols-2">
-        {/* Left panel */}
-        <div className="relative hidden flex-col justify-between overflow-hidden bg-[var(--shop-ink)] p-10 text-[var(--shop-band-text)] md:flex">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[var(--shop-accent)]/25 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-10 h-52 w-52 rounded-full bg-white/5 blur-2xl" />
+    <div className="mx-auto w-full max-w-[440px] rounded-2xl border border-[var(--shop-band-text)]/10 bg-[var(--shop-ink-soft)] p-4 shadow-2xl lg:mx-0">
+      {/* window chrome */}
+      <div className="mb-4 flex items-center gap-1.5">
+        <span className="h-2.5 w-2.5 rounded-full bg-[var(--shop-band-text)]/15" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[var(--shop-band-text)]/15" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[var(--shop-band-text)]/15" />
+        <div className="ml-3 h-2 max-w-[140px] flex-1 rounded-full bg-[var(--shop-band-text)]/10" />
+      </div>
 
-          <span className="relative shop-display text-xs font-semibold uppercase tracking-[0.2em] text-[var(--shop-band-text-muted)]">
-            Admin Central
-          </span>
+      <div className="flex gap-4">
+        {/* sidebar */}
+        <div className="flex flex-col gap-2 border-r border-[var(--shop-band-text)]/10 pr-3">
+          {MOCK_NAV_ICONS.map((Icon, i) => (
+            <div
+              key={i}
+              className={`flex h-7 w-7 items-center justify-center rounded-md ${
+                i === 0
+                  ? "bg-[var(--shop-accent)] text-[var(--shop-ink)]"
+                  : "text-[var(--shop-band-text)]/30"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </div>
+          ))}
+        </div>
 
-          <div className="relative">
-            <span className="mb-3.5 inline-block rounded-full bg-[var(--shop-accent)]/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-accent)]">
-              Admin access
+        {/* content */}
+        <div className="flex-1 space-y-3">
+          {/* stat cards */}
+          <div className="grid grid-cols-3 gap-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-[var(--shop-band-text)]/10 bg-[var(--shop-band-text)]/5 p-2.5"
+              >
+                <div className="h-1.5 w-7 rounded-full bg-[var(--shop-band-text)]/20" />
+                <div className="mt-2 h-3 w-10 rounded-full bg-[var(--shop-band-text)]/40" />
+              </div>
+            ))}
+          </div>
+
+          {/* bar chart */}
+          <div className="flex h-20 items-end gap-1.5 rounded-lg border border-[var(--shop-band-text)]/10 bg-[var(--shop-band-text)]/5 p-3">
+            {MOCK_CHART_BARS.map((h, i) => (
+              <div
+                key={i}
+                className={`flex-1 rounded-sm ${
+                  i === 5
+                    ? "bg-[var(--shop-accent)]"
+                    : "bg-[var(--shop-band-text)]/25"
+                }`}
+                style={{ height: `${h}%` }}
+              />
+            ))}
+          </div>
+
+          {/* table rows */}
+          <div className="space-y-2">
+            {MOCK_ROWS.map((row, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 rounded-lg border border-[var(--shop-band-text)]/10 bg-[var(--shop-band-text)]/5 p-2"
+              >
+                <div className="h-6 w-6 rounded-full bg-[var(--shop-band-text)]/15" />
+                <div className="h-2 max-w-[90px] flex-1 rounded-full bg-[var(--shop-band-text)]/20" />
+                <div
+                  className={`h-4 w-14 rounded-full ${
+                    row.status === "success"
+                      ? "bg-[var(--shop-success)]/25"
+                      : "bg-[var(--shop-warning)]/25"
+                  }`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <div className="flex min-h-screen flex-col bg-[var(--shop-ink)] text-[var(--shop-band-text)]">
+      <header className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-14 py-7">
+        <span className="shop-display text-lg font-bold uppercase tracking-[0.08em]">
+          All In One
+        </span>
+        <Link
+          href="/login"
+          className="shop-display rounded-full border border-[var(--shop-band-text)]/25 px-[22px] py-[10px] text-[13px] font-semibold uppercase tracking-[0.06em] transition-colors duration-150 hover:bg-[var(--shop-band-text)]/8"
+        >
+          Sign In
+        </Link>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-[1280px] flex-1 items-center px-14 py-10 pb-20">
+        <div className="grid w-full items-center gap-16 lg:grid-cols-2">
+          <div className="flex flex-col items-center gap-7 text-center lg:items-start lg:text-left">
+            <span className="shop-display inline-block rounded-full bg-[var(--shop-accent)]/12 px-4 py-[7px] text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--shop-accent)]">
+              For agencies running multiple stores
             </span>
-            <h1 className="shop-display max-w-sm text-4xl font-bold uppercase leading-[0.95] tracking-tight">
-              All In One, Managed From One Place
+
+            <h1
+              className="shop-display m-0 font-bold uppercase tracking-[-0.01em]"
+              style={{ fontSize: "clamp(40px, 5vw, 64px)", lineHeight: 0.98 }}
+            >
+              Every Store.
+              <br />
+              One Panel.
             </h1>
-            <p className="mt-4 max-w-sm text-sm text-[var(--shop-band-text-muted)]">
-              Manage every storefront, order and product catalog from a single,
-              unified dashboard.
+
+            <p className="m-0 max-w-[480px] text-[19px] leading-[1.55] text-[var(--shop-band-text)]/65">
+              Orders, catalog, suppliers and marketing across every storefront
+              you run — synced automatically and managed from a single
+              dashboard, instead of a dozen separate admin logins.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3.5">
-              {[
-                "Unified catalog across every supplier",
-                "Orders, returns and fulfillment in one queue",
-                "Live revenue and inventory reporting",
-              ].map((f) => (
-                <div key={f} className="flex items-center gap-2.5">
-                  <span className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-md bg-white/10 text-[var(--shop-accent)]">
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
-                  </span>
-                  <span className="text-[13px] text-[var(--shop-band-text-muted)]">
-                    {f}
-                  </span>
-                </div>
+            <div className="mt-2 flex flex-wrap justify-center gap-4 lg:justify-start">
+              <Link
+                href="/login"
+                className="shop-display rounded-full bg-[var(--shop-band-text)] px-8 py-[15px] text-sm font-semibold uppercase tracking-[0.05em] text-[var(--shop-ink)] transition-colors duration-150 hover:bg-[#e8e4de]"
+              >
+                Sign In to Your Dashboard
+              </Link>
+            </div>
+
+            <div className="mt-5 flex flex-wrap justify-center gap-9 text-[var(--shop-band-text)]/40 lg:justify-start">
+              {CAPABILITIES.map((label) => (
+                <span
+                  key={label}
+                  className="shop-display text-xs font-semibold uppercase tracking-[0.08em]"
+                >
+                  {label}
+                </span>
               ))}
             </div>
           </div>
 
-          <span className="relative text-xs text-[var(--shop-band-text-muted)]">
-            © {new Date().getFullYear()} All In One
-          </span>
+          <DashboardMockup />
         </div>
+      </main>
 
-        {/* Right panel */}
-        <div className="flex items-center justify-center p-8 sm:p-12">
-          <LoginForm />
-        </div>
-      </div>
+      <footer className="mx-auto flex w-full max-w-[1280px] items-center justify-between border-t border-[var(--shop-band-text)]/10 px-14 py-6 text-[13px] text-[var(--shop-band-text)]/40">
+        <span>© {new Date().getFullYear()} All In One</span>
+        <span className="shop-display text-[11px] font-semibold uppercase tracking-[0.1em]">
+          Admin Central
+        </span>
+      </footer>
     </div>
   );
 }

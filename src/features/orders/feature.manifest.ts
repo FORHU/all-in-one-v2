@@ -12,6 +12,7 @@ export const featureManifest = {
     "useOrders",
     "OrderDetailView",
     "OrdersListView",
+    "useRefreshOrder",
   ] as const,
 } as const;
 

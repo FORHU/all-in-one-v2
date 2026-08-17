@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { CategoryGrid } from "@/features/categories/components/CategoryGrid";
+
+export const metadata: Metadata = { title: "Categories" };
 
 export default function CategoriesPage() {
   return (

@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { SectionTabsLayout } from "@/shared/components/SectionTabsLayout";
+
+export const metadata: Metadata = { title: "All Orders" };
 
 export default function OrdersLayout({
   children,

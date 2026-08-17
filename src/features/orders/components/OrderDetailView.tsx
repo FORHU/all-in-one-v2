@@ -6,6 +6,7 @@ import { ArrowLeft as ArrowLeftIcon } from "lucide-react";
 import { ApiError } from "@/shared/errors/api-error";
 import { useOrder, useSupplierOrders } from "../hooks/useOrderDetail";
 import { OrderStatusControl } from "./OrderStatusControl";
+import { CancelOrderButton } from "./CancelOrderButton";
 import { ShipmentStatusEditor } from "./ShipmentStatusEditor";
 import {
   formatOrderDate,
@@ -95,7 +96,17 @@ export function OrderDetailView({ orderId }: { orderId: string }) {
               {customerLabel(order.customer)}
             </p>
           </div>
-          <OrderStatusControl orderId={order.id} status={order.status} />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <OrderStatusControl orderId={order.id} status={order.status} />
+            {order.status !== "CANCELLED" && order.status !== "REFUNDED" && (
+              <CancelOrderButton
+                orderId={order.id}
+                hasCapturedPayment={order.payments.some(
+                  (p) => p.status === "PAID",
+                )}
+              />
+            )}
+          </div>
         </div>
       </div>
 

@@ -7,8 +7,11 @@ import {
   RenameBrandResponseSchema,
   ProductVariantsResponseSchema,
   ProductVariantResponseSchema,
+  ProductMediaListResponseSchema,
+  ProductMediaResponseSchema,
   type ProductStatus,
   type ProductVisibility,
+  type MediaType,
 } from "../contracts/products.contract";
 
 export type GetAdminProductsParams = {
@@ -177,4 +180,53 @@ export const deleteProductVariant = async (
       method: "DELETE",
     },
   );
+};
+
+export type MediaWriteInput = {
+  url: string;
+  type?: MediaType;
+  altText?: string | null;
+  position?: number;
+  isPrimary?: boolean;
+};
+
+/** GET /api/v2/products/:productId/media — admin-only (catalog:read). */
+export const getProductMedia = async (productId: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/products/${productId}/media`);
+  return ProductMediaListResponseSchema.parse(raw).data.items;
+};
+
+/** POST /api/v2/products/:productId/media — admin-only (catalog:write). */
+export const createProductMedia = async (
+  productId: string,
+  input: MediaWriteInput,
+) => {
+  const raw = await fetcher<unknown>(`/api/v2/products/${productId}/media`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return ProductMediaResponseSchema.parse(raw).data;
+};
+
+/** PUT /api/v2/products/:productId/media/:mediaId — admin-only (catalog:write). */
+export const updateProductMedia = async (
+  productId: string,
+  mediaId: string,
+  input: Partial<MediaWriteInput>,
+) => {
+  const raw = await fetcher<unknown>(
+    `/api/v2/products/${productId}/media/${mediaId}`,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+  return ProductMediaResponseSchema.parse(raw).data;
+};
+
+/** DELETE /api/v2/products/:productId/media/:mediaId — admin-only (catalog:delete). */
+export const deleteProductMedia = async (
+  productId: string,
+  mediaId: string,
+) => {
+  await fetcher<unknown>(`/api/v2/products/${productId}/media/${mediaId}`, {
+    method: "DELETE",
+  });
 };

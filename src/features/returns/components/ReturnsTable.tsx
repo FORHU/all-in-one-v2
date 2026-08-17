@@ -7,14 +7,9 @@ import {
   RotateCw as RotateCwIcon,
 } from "lucide-react";
 import { Pagination } from "@/shared/components/Pagination";
+import { ReturnActions } from "./ReturnActions";
 import type { Return } from "../contracts/returns.contract";
-import {
-  RETURN_STATUS_STYLES,
-  formatStatusLabel,
-  formatReturnDate,
-  formatMoney,
-  customerLabel,
-} from "../lib/presentation";
+import { formatReturnDate, customerLabel } from "../lib/presentation";
 
 type ReturnsTableProps = {
   returns: Return[] | undefined;
@@ -43,12 +38,11 @@ export function ReturnsTable({
   return (
     <div>
       <div className="overflow-hidden rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)]">
-        <div className="grid grid-cols-[1fr_1.4fr_1.4fr_1fr_1fr_1fr] items-center gap-3 border-b border-white/10 bg-[var(--shop-ink)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-band-text-muted)]">
+        <div className="grid grid-cols-[1fr_1.2fr_1.2fr_2fr_1fr] items-center gap-3 border-b border-white/10 bg-[var(--shop-ink)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-band-text-muted)]">
           <span>Order</span>
           <span>Customer</span>
           <span>Reason</span>
-          <span>Status</span>
-          <span>Refund</span>
+          <span>Status &amp; actions</span>
           <span>Requested</span>
         </div>
 
@@ -93,50 +87,41 @@ export function ReturnsTable({
             No return requests match your search.
           </p>
         ) : (
-          rows.map((r) => {
-            const statusStyle = RETURN_STATUS_STYLES[r.status];
-            return (
-              // No dedicated return-detail page/endpoint exists — the parent
-              // order's detail view already shows the full order + payments
-              // context a return needs, so that's where this links.
+          rows.map((r) => (
+            <div
+              key={r.id}
+              className="grid grid-cols-[1fr_1.2fr_1.2fr_2fr_1fr] items-center gap-3 border-b border-[var(--shop-border)] px-[18px] py-3.5 last:border-b-0"
+            >
+              {/* No dedicated return-detail page — the parent order's detail
+                  view has the full order + payments context, and now also
+                  has these same actions embedded, so it's still the one
+                  place to go for more. */}
               <Link
-                key={r.id}
                 href={`/orders/${r.order.id}`}
-                className="grid grid-cols-[1fr_1.4fr_1.4fr_1fr_1fr_1fr] items-center gap-3 border-b border-[var(--shop-border)] px-[18px] py-3.5 transition hover:bg-[var(--shop-bg-soft)] last:border-b-0"
+                className="truncate text-sm font-semibold text-[var(--shop-text)] hover:underline"
               >
-                <span className="truncate text-sm font-semibold text-[var(--shop-text)]">
-                  {r.order.orderNumber}
-                </span>
-                <span className="truncate text-xs text-[var(--shop-text-muted)]">
-                  {customerLabel(r.customer)}
-                </span>
-                <span className="truncate text-xs text-[var(--shop-text-muted)]">
-                  {r.reason}
-                </span>
-                <span
-                  className="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
-                  style={{
-                    background: statusStyle.bg,
-                    color: statusStyle.color,
-                  }}
-                >
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: statusStyle.color }}
-                  />
-                  {formatStatusLabel(r.status)}
-                </span>
-                <span className="text-xs font-semibold text-[var(--shop-text)]">
-                  {r.refund
-                    ? formatMoney(r.refund.amount, r.order.currency)
-                    : "—"}
-                </span>
-                <span className="text-xs text-[var(--shop-text-muted)]">
-                  {formatReturnDate(r.createdAt)}
-                </span>
+                {r.order.orderNumber}
               </Link>
-            );
-          })
+              <span className="truncate text-xs text-[var(--shop-text-muted)]">
+                {customerLabel(r.customer)}
+              </span>
+              <span className="truncate text-xs text-[var(--shop-text-muted)]">
+                {r.reason}
+              </span>
+              <ReturnActions
+                returnId={r.id}
+                orderId={r.order.id}
+                status={r.status}
+                notes={r.notes}
+                refund={r.refund}
+                orderTotal={r.order.totalAmount}
+                currency={r.order.currency}
+              />
+              <span className="text-xs text-[var(--shop-text-muted)]">
+                {formatReturnDate(r.createdAt)}
+              </span>
+            </div>
+          ))
         )}
       </div>
 

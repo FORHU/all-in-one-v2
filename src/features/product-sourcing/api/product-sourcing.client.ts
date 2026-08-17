@@ -3,10 +3,12 @@ import {
   SupplierSearchResponseSchema,
   SupplierProductDetailResponseSchema,
   ImportProductResponseSchema,
+  CategoryOptionsResponseSchema,
   type SupplierSearchPage,
   type SupplierProductDetail,
   type ImportProductInput,
   type ImportedProduct,
+  type CategoryOption,
 } from "../contracts/product-sourcing.contract";
 
 /**
@@ -40,6 +42,16 @@ export async function getSupplierProduct(
     `/api/v2/suppliers/${supplierId}/products/${externalId}`,
   );
   return SupplierProductDetailResponseSchema.parse(raw).data;
+}
+
+/**
+ * GET /api/v2/categories — mirrors products/api/products.client.ts's
+ * getCategoriesForSelect (same endpoint, same shape); duplicated rather than
+ * imported since product-sourcing can't reach into the products feature.
+ */
+export async function getCategoryOptions(): Promise<CategoryOption[]> {
+  const raw = await fetcher<unknown>("/api/v2/categories?limit=100");
+  return CategoryOptionsResponseSchema.parse(raw).data.items;
 }
 
 /** POST /api/v2/products/import */

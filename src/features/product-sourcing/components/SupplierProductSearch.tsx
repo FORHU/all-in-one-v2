@@ -7,6 +7,7 @@ import { Dropdown, type DropdownOption } from "@/shared/components/Dropdown";
 import type {
   SupplierSearchResult,
   SupplierProductDetail,
+  CategoryOption,
 } from "../contracts/product-sourcing.contract";
 
 type SupplierProductSearchProps = {
@@ -30,6 +31,9 @@ type SupplierProductSearchProps = {
   isDetailError: boolean;
   onImport: (externalId: string) => void;
   isImporting: boolean;
+  categoryOptions: CategoryOption[] | undefined;
+  categoryId: string;
+  onCategoryChange: (id: string) => void;
 };
 
 export function SupplierProductSearch({
@@ -53,6 +57,9 @@ export function SupplierProductSearch({
   isDetailError,
   onImport,
   isImporting,
+  categoryOptions,
+  categoryId,
+  onCategoryChange,
 }: SupplierProductSearchProps) {
   const isBusy = isSearching || isSearchFetching || isSearchPending;
 
@@ -62,40 +69,35 @@ export function SupplierProductSearch({
 
   return (
     <div>
-      <div className="mb-3 flex items-center gap-2">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
-          Supplier
-        </span>
+      <div className="mb-5 flex items-center gap-2.5">
+        <div className="flex flex-1 items-center gap-2 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2">
+          {isBusy ? (
+            <Loader2Icon
+              className="h-4 w-4 shrink-0 animate-spin text-[var(--shop-accent)]"
+              aria-hidden="true"
+            />
+          ) : (
+            <SearchIcon className="h-4 w-4 shrink-0 text-[var(--shop-text-muted)]" />
+          )}
+          <input
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder='Search the supplier&apos;s catalog, e.g. "shirt"'
+            className="w-full bg-transparent text-xs text-[var(--shop-text)] outline-none"
+          />
+          {isBusy && (
+            <span className="shrink-0 text-[11px] text-[var(--shop-text-muted)]">
+              Searching…
+            </span>
+          )}
+        </div>
         <Dropdown
           value={supplierId}
           options={supplierDropdownOptions}
           onChange={onSupplierChange}
-          size="sm"
-          className="w-44"
+          className="w-48 shrink-0"
           aria-label="Supplier"
         />
-      </div>
-
-      <div className="mb-5 flex items-center gap-2 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2">
-        {isBusy ? (
-          <Loader2Icon
-            className="h-4 w-4 shrink-0 animate-spin text-[var(--shop-accent)]"
-            aria-hidden="true"
-          />
-        ) : (
-          <SearchIcon className="h-4 w-4 shrink-0 text-[var(--shop-text-muted)]" />
-        )}
-        <input
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder='Search the supplier&apos;s catalog, e.g. "shirt"'
-          className="w-full bg-transparent text-xs text-[var(--shop-text)] outline-none"
-        />
-        {isBusy && (
-          <span className="shrink-0 text-[11px] text-[var(--shop-text-muted)]">
-            Searching…
-          </span>
-        )}
       </div>
 
       {selectedExternalId && (
@@ -107,6 +109,9 @@ export function SupplierProductSearch({
           onClose={() => onSelect(null)}
           onImport={() => onImport(selectedExternalId)}
           isImporting={isImporting}
+          categoryOptions={categoryOptions}
+          categoryId={categoryId}
+          onCategoryChange={onCategoryChange}
         />
       )}
 

@@ -123,9 +123,32 @@ export const SupplierProductDetailResponseSchema = z.object({
 export const ImportProductInputSchema = z.object({
   supplierId: z.string(),
   externalId: z.string(),
+  // Admin's explicit category choice from the import UI: a real id, `null`
+  // for explicit "No category", or omitted to fall back to the backend's
+  // auto-create-from-supplier-label behavior.
+  categoryId: z.string().nullable().optional(),
 });
 
 export type ImportProductInput = z.infer<typeof ImportProductInputSchema>;
+
+// Duplicated from products.contract.ts's CategoryOptionSchema rather than
+// imported — product-sourcing can't import from the products feature (FAOS
+// cross-feature import boundary, enforced by tools/validate-architecture.mjs
+// regardless of manifest `exposes`).
+export const CategoryOptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+export type CategoryOption = z.infer<typeof CategoryOptionSchema>;
+
+export const CategoryOptionsResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(CategoryOptionSchema),
+  }),
+});
 
 // The imported CatalogProduct row. Only the fields this feature reads are
 // asserted — the real row has more (tenantId, timestamps, etc).

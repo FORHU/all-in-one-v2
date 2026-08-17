@@ -130,6 +130,53 @@ export const StockResponseSchema = z.object({
 export type StockSummary = z.infer<typeof StockSummarySchema>;
 export type StockLocationRow = z.infer<typeof StockLocationRowSchema>;
 
+/**
+ * GET /api/v2/products/admin — called directly (not through the products
+ * feature's client, which this feature can't import per FAOS) to power the
+ * Stock Lookup page's "search for a product" step — an admin can look up a
+ * variant's stock by name, not by pasting its raw id. Narrowed to just what
+ * a search result row needs.
+ */
+export const StockProductSearchResultSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  thumbnailUrl: z.string().nullable(),
+});
+
+export const StockProductSearchResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(StockProductSearchResultSchema),
+  }),
+});
+
+export type StockProductSearchResult = z.infer<
+  typeof StockProductSearchResultSchema
+>;
+
+/**
+ * GET /api/v2/products/:productId/variants — same cross-feature restriction
+ * as above; narrowed to just what the Stock Lookup page's variant picker
+ * needs once a product is chosen.
+ */
+export const StockVariantOptionSchema = z.object({
+  id: z.string(),
+  sku: z.string().nullable(),
+  title: z.string(),
+  stockAvailable: z.number(),
+});
+
+export const StockVariantOptionsResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(StockVariantOptionSchema),
+  }),
+});
+
+export type StockVariantOption = z.infer<typeof StockVariantOptionSchema>;
+
 // ── Transactions (GET /api/v2/inventory/transactions) ───────────────────────
 
 export const INVENTORY_TRANSACTION_TYPE_VALUES = [

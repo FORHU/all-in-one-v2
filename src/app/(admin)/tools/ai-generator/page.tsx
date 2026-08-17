@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { PagePlaceholder } from "@/shared/components/PagePlaceholder";
+
+export const metadata: Metadata = { title: "AI Generator" };
 
 export default function AiGeneratorPage() {
   return (

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { X as XIcon } from "lucide-react";
 import {
   useCreatePricingRule,
   useUpdatePricingRule,
@@ -12,6 +11,7 @@ import type {
   PricingRuleWriteInput,
   PricingRuleSaleWriteInput,
 } from "../api/pricing-rules.client";
+import { Modal } from "@/shared/components/Modal";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
@@ -152,271 +152,261 @@ export function PricingRuleFormModal({
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--shop-ink)]/50 p-6"
+    <Modal
+      onClose={onClose}
+      title={isEdit ? "Edit pricing rule" : "New pricing rule"}
+      subtitle={isEdit ? rule?.name : undefined}
+      maxWidthClassName="max-w-[440px]"
+      footer={
+        confirmingDelete ? (
+          <div className="flex items-center gap-3 rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4">
+            <p className="flex-1 text-[13px] font-semibold text-[var(--shop-danger)]">
+              Delete &quot;{rule?.name}&quot;?
+            </p>
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(false)}
+              disabled={isPending}
+              className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
+            >
+              Keep it
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              disabled={isPending}
+              className="rounded-lg bg-[var(--shop-danger)] px-4 py-2.5 text-[13px] font-bold text-white hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isDeleting ? "Deleting…" : "Delete permanently"}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            {isEdit && (
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                disabled={isPending || !canDelete}
+                title={
+                  !canDelete
+                    ? rule!.isDefault
+                      ? "Set another rule as default first"
+                      : "Reassign the products using this rule first"
+                    : undefined
+                }
+                className="rounded-lg border border-[var(--shop-danger)]/30 px-4 py-2.5 text-[13px] font-bold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Delete rule
+              </button>
+            )}
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="pricing-rule-form"
+              disabled={
+                isPending ||
+                !dirty ||
+                !name.trim() ||
+                markupValue.trim() === "" ||
+                !saleFormValid
+              }
+              className="rounded-lg bg-[var(--shop-ink)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-bg)] hover:bg-[var(--shop-ink-soft)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isCreating || isUpdating
+                ? "Saving…"
+                : isEdit
+                  ? "Save changes"
+                  : "Create rule"}
+            </button>
+          </div>
+        )
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[440px] overflow-auto rounded-2xl border border-[var(--shop-border)] bg-[var(--shop-surface)] shadow-xl"
+      <form
+        id="pricing-rule-form"
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4"
       >
-        <div className="flex items-center justify-between border-b border-[var(--shop-border)] p-6">
-          <p className="shop-display text-[17px] font-semibold text-[var(--shop-text)]">
-            {isEdit ? "Edit pricing rule" : "New pricing rule"}
-          </p>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg bg-[var(--shop-bg)] text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
-          >
-            <XIcon className="h-3.5 w-3.5" />
-          </button>
+        <div>
+          <label className={labelClass}>Name</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Standard markup"
+            disabled={isPending}
+            className={inputClass}
+          />
+          {errors.name && (
+            <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
+              {errors.name}
+            </p>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
-          <div>
-            <label className={labelClass}>Name</label>
+        <div>
+          <label className={labelClass}>Markup percentage</label>
+          <div className="relative">
             <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Standard markup"
-              disabled={isPending}
-              className={inputClass}
-            />
-            {errors.name && (
-              <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
-                {errors.name}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className={labelClass}>Markup percentage</label>
-            <div className="relative">
-              <input
-                value={markupValue}
-                onChange={(e) => setMarkupValue(e.target.value)}
-                placeholder="0"
-                inputMode="decimal"
-                disabled={isPending}
-                className={`${inputClass} pr-7`}
-              />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--shop-text-muted)]">
-                %
-              </span>
-            </div>
-            <p className="mt-1.5 text-[11px] text-[var(--shop-text-muted)]">
-              Selling price = supplier cost × (1 + this percentage). Applied to
-              variants that have a known cost — imported/dropship variants, not
-              manually priced ones.
-            </p>
-            {errors.markupValue && (
-              <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
-                {errors.markupValue}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className={labelClass}>Minimum profit (optional)</label>
-            <input
-              value={minimumProfit}
-              onChange={(e) => setMinimumProfit(e.target.value)}
-              placeholder="0.00"
+              value={markupValue}
+              onChange={(e) => setMarkupValue(e.target.value)}
+              placeholder="0"
               inputMode="decimal"
               disabled={isPending}
-              className={inputClass}
+              className={`${inputClass} pr-7`}
             />
-            <p className="mt-1.5 text-[11px] text-[var(--shop-text-muted)]">
-              Floor on profit per unit — the price is bumped up if the
-              percentage alone would leave less than this.
-            </p>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--shop-text-muted)]">
+              %
+            </span>
           </div>
+          <p className="mt-1.5 text-[11px] text-[var(--shop-text-muted)]">
+            Selling price = supplier cost × (1 + this percentage). Applied to
+            variants that have a known cost — imported/dropship variants, not
+            manually priced ones.
+          </p>
+          {errors.markupValue && (
+            <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
+              {errors.markupValue}
+            </p>
+          )}
+        </div>
 
-          <div className="border-t border-[var(--shop-border)] pt-4">
-            {isEdit && rule!.sale && (
-              <p
-                className="mb-2.5 text-[11px] font-semibold"
-                style={{
-                  color: rule!.sale.isActive
-                    ? "var(--shop-success)"
-                    : "var(--shop-text-muted)",
-                }}
-              >
-                {rule!.sale.isActive
-                  ? "Sale is currently active."
-                  : new Date(rule!.sale.endsAt) < new Date()
-                    ? "Sale has ended."
-                    : "Sale is scheduled — not active yet."}
-              </p>
-            )}
+        <div>
+          <label className={labelClass}>Minimum profit (optional)</label>
+          <input
+            value={minimumProfit}
+            onChange={(e) => setMinimumProfit(e.target.value)}
+            placeholder="0.00"
+            inputMode="decimal"
+            disabled={isPending}
+            className={inputClass}
+          />
+          <p className="mt-1.5 text-[11px] text-[var(--shop-text-muted)]">
+            Floor on profit per unit — the price is bumped up if the percentage
+            alone would leave less than this.
+          </p>
+        </div>
 
-            <label className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
-              <input
-                type="checkbox"
-                checked={saleEnabled}
-                onChange={(e) => setSaleEnabled(e.target.checked)}
-                disabled={isPending}
-                className="accent-[var(--shop-ink)]"
-              />
-              Run a time-boxed sale
-            </label>
+        <div className="border-t border-[var(--shop-border)] pt-4">
+          {isEdit && rule!.sale && (
+            <p
+              className="mb-2.5 text-[11px] font-semibold"
+              style={{
+                color: rule!.sale.isActive
+                  ? "var(--shop-success)"
+                  : "var(--shop-text-muted)",
+              }}
+            >
+              {rule!.sale.isActive
+                ? "Sale is currently active."
+                : new Date(rule!.sale.endsAt) < new Date()
+                  ? "Sale has ended."
+                  : "Sale is scheduled — not active yet."}
+            </p>
+          )}
 
-            {saleEnabled && (
-              <div className="mt-3 flex flex-col gap-3">
-                <div className="flex gap-2">
-                  {(["PERCENTAGE", "FIXED_AMOUNT"] as const).map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setSaleType(type)}
-                      disabled={isPending}
-                      className={[
-                        "flex-1 rounded-lg border px-3 py-2 text-xs font-bold",
-                        saleType === type
-                          ? "border-[var(--shop-accent)] bg-[color-mix(in_srgb,var(--shop-accent)_10%,transparent)] text-[var(--shop-text)]"
-                          : "border-[var(--shop-border)] text-[var(--shop-text-muted)]",
-                      ].join(" ")}
-                    >
-                      {type === "PERCENTAGE" ? "% off" : "$ off"}
-                    </button>
-                  ))}
-                </div>
+          <label className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
+            <input
+              type="checkbox"
+              checked={saleEnabled}
+              onChange={(e) => setSaleEnabled(e.target.checked)}
+              disabled={isPending}
+              className="accent-[var(--shop-ink)]"
+            />
+            Run a time-boxed sale
+          </label>
 
+          {saleEnabled && (
+            <div className="mt-3 flex flex-col gap-3">
+              <div className="flex gap-2">
+                {(["PERCENTAGE", "FIXED_AMOUNT"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setSaleType(type)}
+                    disabled={isPending}
+                    className={[
+                      "flex-1 rounded-lg border px-3 py-2 text-xs font-bold",
+                      saleType === type
+                        ? "border-[var(--shop-accent)] bg-[color-mix(in_srgb,var(--shop-accent)_10%,transparent)] text-[var(--shop-text)]"
+                        : "border-[var(--shop-border)] text-[var(--shop-text-muted)]",
+                    ].join(" ")}
+                  >
+                    {type === "PERCENTAGE" ? "% off" : "$ off"}
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  {saleType === "PERCENTAGE"
+                    ? "Discount percentage"
+                    : "Discount amount"}
+                </label>
+                <input
+                  value={saleValue}
+                  onChange={(e) => setSaleValue(e.target.value)}
+                  placeholder="0"
+                  inputMode="decimal"
+                  disabled={isPending}
+                  className={inputClass}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className={labelClass}>
-                    {saleType === "PERCENTAGE"
-                      ? "Discount percentage"
-                      : "Discount amount"}
-                  </label>
+                  <label className={labelClass}>Starts</label>
                   <input
-                    value={saleValue}
-                    onChange={(e) => setSaleValue(e.target.value)}
-                    placeholder="0"
-                    inputMode="decimal"
+                    type="datetime-local"
+                    value={saleStartsAt}
+                    onChange={(e) => setSaleStartsAt(e.target.value)}
                     disabled={isPending}
                     className={inputClass}
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Starts</label>
-                    <input
-                      type="datetime-local"
-                      value={saleStartsAt}
-                      onChange={(e) => setSaleStartsAt(e.target.value)}
-                      disabled={isPending}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Ends</label>
-                    <input
-                      type="datetime-local"
-                      value={saleEndsAt}
-                      onChange={(e) => setSaleEndsAt(e.target.value)}
-                      disabled={isPending}
-                      className={inputClass}
-                    />
-                  </div>
+                <div>
+                  <label className={labelClass}>Ends</label>
+                  <input
+                    type="datetime-local"
+                    value={saleEndsAt}
+                    onChange={(e) => setSaleEndsAt(e.target.value)}
+                    disabled={isPending}
+                    className={inputClass}
+                  />
                 </div>
-
-                {saleStartsAt && saleEndsAt && !saleFormValid && (
-                  <p className="text-[11px] text-[var(--shop-danger)]">
-                    End must be after the start.
-                  </p>
-                )}
-
-                <p className="text-[11px] text-[var(--shop-text-muted)]">
-                  Discounts the already marked-up price during this window. The
-                  badge above always reflects these dates live, but a
-                  product&apos;s displayed price only refreshes when this rule
-                  is saved, applied to all, or the product is reassigned to it —
-                  not automatically the instant the window starts or ends.
-                </p>
               </div>
-            )}
-          </div>
 
-          {isEdit && rule!.isDefault && (
-            <p className="rounded-lg bg-[var(--shop-bg-soft)] px-3 py-2 text-[11px] text-[var(--shop-text-muted)]">
-              This is your default rule — new products and imports use it
-              automatically unless given their own rule.
-            </p>
-          )}
-
-          {confirmingDelete ? (
-            <div className="flex items-center gap-3 rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4">
-              <p className="flex-1 text-[13px] font-semibold text-[var(--shop-danger)]">
-                Delete &quot;{rule?.name}&quot;?
-              </p>
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(false)}
-                disabled={isPending}
-                className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
-              >
-                Keep it
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={isPending}
-                className="rounded-lg bg-[var(--shop-danger)] px-4 py-2.5 text-[13px] font-bold text-white hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isDeleting ? "Deleting…" : "Delete permanently"}
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2.5 border-t border-[var(--shop-border)] pt-5">
-              {isEdit && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(true)}
-                  disabled={isPending || !canDelete}
-                  title={
-                    !canDelete
-                      ? rule!.isDefault
-                        ? "Set another rule as default first"
-                        : "Reassign the products using this rule first"
-                      : undefined
-                  }
-                  className="rounded-lg border border-[var(--shop-danger)]/30 px-4 py-2.5 text-[13px] font-bold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Delete rule
-                </button>
+              {saleStartsAt && saleEndsAt && !saleFormValid && (
+                <p className="text-[11px] text-[var(--shop-danger)]">
+                  End must be after the start.
+                </p>
               )}
-              <div className="flex-1" />
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isPending}
-                className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={
-                  isPending ||
-                  !dirty ||
-                  !name.trim() ||
-                  markupValue.trim() === "" ||
-                  !saleFormValid
-                }
-                className="rounded-lg bg-[var(--shop-ink)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-bg)] hover:bg-[var(--shop-ink-soft)] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isCreating || isUpdating
-                  ? "Saving…"
-                  : isEdit
-                    ? "Save changes"
-                    : "Create rule"}
-              </button>
+
+              <p className="text-[11px] text-[var(--shop-text-muted)]">
+                Discounts the already marked-up price during this window. The
+                badge above always reflects these dates live, but a
+                product&apos;s displayed price only refreshes when this rule is
+                saved, applied to all, or the product is reassigned to it — not
+                automatically the instant the window starts or ends.
+              </p>
             </div>
           )}
-        </form>
-      </div>
-    </div>
+        </div>
+
+        {isEdit && rule!.isDefault && (
+          <p className="rounded-lg bg-[var(--shop-bg-soft)] px-3 py-2 text-[11px] text-[var(--shop-text-muted)]">
+            This is your default rule — new products and imports use it
+            automatically unless given their own rule.
+          </p>
+        )}
+      </form>
+    </Modal>
   );
 }

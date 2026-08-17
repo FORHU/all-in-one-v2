@@ -136,7 +136,7 @@ export function SupplierSearchResults({
               <p className="line-clamp-2 text-xs font-semibold text-[var(--shop-text)]">
                 {item.nameEn || "Untitled product"}
               </p>
-              <p className="text-xs text-[var(--shop-text-muted)]">
+              <p className="text-xs font-bold text-[var(--shop-text)]">
                 {formatPrice(item.sellPrice)}
               </p>
             </button>

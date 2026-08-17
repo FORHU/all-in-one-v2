@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { PagePlaceholder } from "@/shared/components/PagePlaceholder";
+
+export const metadata: Metadata = { title: "Activity Logs" };
 
 export default function ActivityLogsPage() {
   return (

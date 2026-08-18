@@ -9,9 +9,11 @@ import {
   updateCollection,
   deleteCollection,
   addCollectionItem,
+  updateCollectionItem,
   removeCollectionItem,
   reorderCollectionItems,
   searchProducts,
+  getCategoriesForSelect,
   type GetCollectionsParams,
   type CollectionWriteInput,
 } from "../api/collections.client";
@@ -91,13 +93,40 @@ export function useAddCollectionItem(collectionId: string) {
     mutationFn: ({
       productId,
       position,
+      slot,
+      isOptional,
     }: {
       productId: string;
       position: number;
-    }) => addCollectionItem(collectionId, productId, position),
+      slot?: string | null;
+      isOptional?: boolean;
+    }) =>
+      addCollectionItem(collectionId, productId, position, {
+        slot,
+        isOptional,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: collectionsKeys.lists() });
     },
+  });
+}
+
+/**
+ * Sets an existing item's slot (e.g. "Top") or optional flag without
+ * removing/re-adding it — see CollectionFormModal's per-item slot input.
+ * No toast/list invalidation: this fires on every keystroke-blur/checkbox
+ * click, same quiet-mutation reasoning as useReorderCollectionItems.
+ */
+export function useUpdateCollectionItem(collectionId: string) {
+  return useSafeMutation({
+    mutationFn: ({
+      itemId,
+      ...data
+    }: {
+      itemId: string;
+      slot?: string | null;
+      isOptional?: boolean;
+    }) => updateCollectionItem(collectionId, itemId, data),
   });
 }
 
@@ -125,11 +154,31 @@ export function useReorderCollectionItems(collectionId: string) {
   });
 }
 
-/** Debounce the query string before enabling this — see CollectionFormModal. */
-export function useProductSearch(query: string) {
+/**
+ * Debounce the query string before enabling this — see CollectionFormModal.
+ * `categoryId` alone (no typed text) is enough to run the search, so
+ * browsing a category doesn't also require typing something.
+ */
+export function useProductSearch(query: string, categoryId?: string) {
   return useSafeQuery({
-    queryKey: [...collectionsKeys.all, "product-search", query] as const,
-    queryFn: () => searchProducts(query),
-    enabled: query.trim().length >= 2,
+    queryKey: [
+      ...collectionsKeys.all,
+      "product-search",
+      query,
+      categoryId,
+    ] as const,
+    queryFn: () => searchProducts(query, categoryId),
+    enabled: query.trim().length >= 2 || Boolean(categoryId),
+  });
+}
+
+/** Category options for the collection form's "featured category" select. */
+export function useCategoryOptions() {
+  const tenantSlug = useTenantStore((s) => s.tenantSlug);
+
+  return useSafeQuery({
+    queryKey: [...collectionsKeys.all, "category-options", tenantSlug] as const,
+    queryFn: () => getCategoriesForSelect(),
+    enabled: Boolean(tenantSlug),
   });
 }

@@ -79,7 +79,14 @@ export const SupplierSearchResponseSchema = z.object({
 // /product/query directly: a real product can carry 30+ of these).
 export const SupplierProductVariantSchema = z.object({
   vid: z.string(),
-  variantNameEn: z.string().optional(),
+  // CJ sends an explicit `null` here (not just omitting the field) for
+  // variants without a distinct English name — confirmed by curling
+  // /product/query for a multi-size/color product where every variant came
+  // back this way. `.optional()` alone only tolerates a missing field, not
+  // a present `null`, and previously threw a raw ZodError for any such
+  // product (see supplier.service.ts's getSupplierProduct 404 fix for the
+  // same class of "CJ returns null" bug).
+  variantNameEn: z.string().nullable().optional(),
   variantKey: z.string().optional(),
   variantImage: z.string().optional(),
   variantSku: z.string().optional(),

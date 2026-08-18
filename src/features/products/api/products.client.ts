@@ -9,6 +9,8 @@ import {
   ProductVariantResponseSchema,
   ProductMediaListResponseSchema,
   ProductMediaResponseSchema,
+  ResyncAllProductsResponseSchema,
+  ResyncProductResponseSchema,
   type ProductStatus,
   type ProductVisibility,
   type MediaType,
@@ -229,4 +231,32 @@ export const deleteProductMedia = async (
   await fetcher<unknown>(`/api/v2/products/${productId}/media/${mediaId}`, {
     method: "DELETE",
   });
+};
+
+/**
+ * POST /api/v2/products/resync-all — admin-only (catalog:write). Re-queues
+ * every already-imported product for this tenant (optionally scoped to one
+ * supplier) for a fresh sync — refreshes price/attributes/images AND stock
+ * from the supplier's current data. Async: this call only enqueues the
+ * work, the actual update happens once the worker processes it.
+ */
+export const resyncAllProducts = async (supplierId?: string) => {
+  const raw = await fetcher<unknown>("/api/v2/products/resync-all", {
+    method: "POST",
+    body: JSON.stringify(supplierId ? { supplierId } : {}),
+  });
+  return ResyncAllProductsResponseSchema.parse(raw).data;
+};
+
+/**
+ * POST /api/v2/products/:id/resync — admin-only (catalog:write). Refreshes
+ * one already-imported product from its supplier synchronously (no worker
+ * involved) — for a per-row "Refresh" action, unlike resyncAllProducts
+ * above which queues background jobs.
+ */
+export const resyncProduct = async (productId: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/products/${productId}/resync`, {
+    method: "POST",
+  });
+  return ResyncProductResponseSchema.parse(raw).data;
 };

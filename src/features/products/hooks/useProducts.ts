@@ -19,6 +19,8 @@ import {
   createProductMedia,
   updateProductMedia,
   deleteProductMedia,
+  resyncAllProducts,
+  resyncProduct,
   type GetAdminProductsParams,
   type ProductWriteInput,
   type VariantWriteInput,
@@ -230,6 +232,44 @@ export function useDeleteProductMedia(productId: string) {
         queryKey: productsKeys.media(productId),
       });
       queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Re-queues every already-imported product (optionally scoped to one
+ * supplier) for a stock/price/attribute refresh. Fire-and-forget from the
+ * UI's perspective — the actual DB update happens later once the worker
+ * processes the jobs, so this doesn't invalidate the products list (there's
+ * nothing new to show yet, and doing so would just refetch the same stale
+ * numbers).
+ */
+export function useResyncAllProducts() {
+  return useSafeMutation({
+    mutationFn: (supplierId?: string) => resyncAllProducts(supplierId),
+    onSuccess: (result) => {
+      notify.success(
+        result.jobsQueued > 0
+          ? `Queued a stock refresh for ${result.productsQueued} product${result.productsQueued === 1 ? "" : "s"}. This runs in the background — recheck stock in a moment.`
+          : "No already-imported products found to refresh.",
+      );
+    },
+  });
+}
+
+/**
+ * Refreshes one already-imported product synchronously — unlike
+ * useResyncAllProducts, the update is real by the time this resolves, so
+ * (unlike that hook) this one does invalidate the products list.
+ */
+export function useResyncProduct() {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: (productId: string) => resyncProduct(productId),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+      notify.success(`Refreshed "${result.title}" from its supplier.`);
     },
   });
 }

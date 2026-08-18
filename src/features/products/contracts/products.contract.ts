@@ -231,6 +231,37 @@ export const RenameBrandResponseSchema = z.object({
   }),
 });
 
+/**
+ * POST /api/v2/products/resync-all — bypasses the shared { status,
+ * statusCode, data } envelope, same as /products/import and /products/sync
+ * (ProductSyncController's own res.json shape, not the responseSuccess
+ * helper the rest of this file's endpoints use).
+ */
+export const ResyncAllProductsResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  data: z.object({
+    suppliersQueued: z.number(),
+    jobsQueued: z.number(),
+    productsQueued: z.number(),
+  }),
+});
+
+/**
+ * POST /api/v2/products/:id/resync — synchronous, so `data` is the real
+ * updated CatalogProduct row. Only `title` is asserted (same "assert what
+ * we read" restraint as ImportedProductSchema on the /tools page) — the
+ * products list refetch (triggered on success) is what actually shows the
+ * refreshed stock, this response is only used for the success toast.
+ */
+export const ResyncProductResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  data: z.object({
+    title: z.string(),
+  }),
+});
+
 export type ProductStatus = z.infer<typeof ProductStatusSchema>;
 export type ProductVisibility = z.infer<typeof ProductVisibilitySchema>;
 export type AdminProduct = z.infer<typeof AdminProductSchema>;

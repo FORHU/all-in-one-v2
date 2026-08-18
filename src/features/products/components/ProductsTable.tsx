@@ -5,12 +5,14 @@ import {
   AlertTriangle as AlertTriangleIcon,
   Plus as PlusIcon,
   RotateCw as RotateCwIcon,
+  RefreshCw as RefreshCwIcon,
 } from "lucide-react";
 import { Pagination } from "@/shared/components/Pagination";
 import type {
   AdminProduct,
   ProductStatus,
 } from "../contracts/products.contract";
+import { useResyncAllProducts } from "../hooks/useProducts";
 import { FilterBar } from "./FilterBar";
 import { BulkToolbar } from "./BulkToolbar";
 import { ProductRow } from "./ProductRow";
@@ -63,6 +65,7 @@ export function ProductsTable({
   const [formModal, setFormModal] = useState<
     { mode: "create" } | { mode: "edit"; product: AdminProduct } | null
   >(null);
+  const { mutate: resyncAll, isPending: isResyncing } = useResyncAllProducts();
 
   const rows = products ?? [];
   const selectedCount = Object.values(selected).filter(Boolean).length;
@@ -78,7 +81,20 @@ export function ProductsTable({
 
   return (
     <div>
-      <div className="mb-3.5 flex justify-end">
+      <div className="mb-3.5 flex justify-end gap-2.5">
+        <button
+          type="button"
+          onClick={() => resyncAll(undefined)}
+          disabled={isResyncing}
+          title="Refresh stock and pricing for every already-imported supplier product"
+          className="flex items-center gap-1.5 rounded-full border border-[var(--shop-border)] px-4 py-2 text-[11.5px] font-bold uppercase tracking-wide text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <RefreshCwIcon
+            className={`h-3.5 w-3.5 ${isResyncing ? "animate-spin" : ""}`}
+            strokeWidth={2.5}
+          />
+          {isResyncing ? "Queuing…" : "Resync stock"}
+        </button>
         <button
           type="button"
           onClick={() => setFormModal({ mode: "create" })}

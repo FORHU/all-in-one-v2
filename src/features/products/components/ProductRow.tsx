@@ -5,7 +5,11 @@ import {
   MoreHorizontal as MoreHorizontalIcon,
 } from "lucide-react";
 import type { AdminProduct } from "../contracts/products.contract";
-import { useUpdateProduct, useProductVariants } from "../hooks/useProducts";
+import {
+  useUpdateProduct,
+  useProductVariants,
+  useResyncProduct,
+} from "../hooks/useProducts";
 import {
   STATUS_STYLES,
   VISIBILITY_LABELS,
@@ -39,6 +43,7 @@ export function ProductRow({
   const { mutate: archiveProduct, isPending: isArchiving } = useUpdateProduct(
     product.id,
   );
+  const { mutate: resyncProduct, isPending: isResyncing } = useResyncProduct();
   // Only fetched once the row is actually expanded — no point firing a
   // variants query per row for every row on the page just to show a count
   // that's already on `product.variantCount`.
@@ -164,6 +169,17 @@ export function ProductRow({
               </button>
               <button className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]">
                 Duplicate
+              </button>
+              <button
+                onClick={() => {
+                  resyncProduct(product.id);
+                  onToggleMenu();
+                }}
+                disabled={isResyncing}
+                title="Refresh this product's stock and pricing from its supplier"
+                className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isResyncing ? "Refreshing…" : "Refresh stock"}
               </button>
               <button
                 onClick={() => archiveProduct({ status: "ARCHIVED" })}

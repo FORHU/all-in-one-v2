@@ -30,6 +30,13 @@ export const CollectionItemSchema = z.object({
   id: z.string(),
   productId: z.string(),
   position: z.number(),
+  // Which garment/component role this item fills within the collection
+  // (e.g. "Top", "Bottom", "Shoes") — null when the item isn't part of a
+  // slotted OUTFIT/lookbook and is just a plain curated pick.
+  slot: z.string().nullable(),
+  // Whether this item is a required part of the look (e.g. the top) or an
+  // optional add-on (e.g. a belt) — only meaningful for OUTFIT-style types.
+  isOptional: z.boolean(),
   product: CollectionItemProductSchema,
 });
 
@@ -47,6 +54,9 @@ export type Collection = {
   isPublic: boolean;
   isDeleted: boolean;
   parentId: string | null;
+  // Which category page (e.g. "Women") this collection is featured under —
+  // null = not tied to any category. See CatalogCollection.categoryId.
+  categoryId: string | null;
   createdAt: string;
   updatedAt: string;
   children: Collection[];
@@ -66,6 +76,7 @@ export const CollectionSchema: z.ZodType<Collection> = z.lazy(() =>
     isPublic: z.boolean(),
     isDeleted: z.boolean(),
     parentId: z.string().nullable(),
+    categoryId: z.string().nullable(),
     createdAt: z.string(),
     updatedAt: z.string(),
     children: z.array(CollectionSchema).default([]),
@@ -146,3 +157,27 @@ export const ProductSearchResponseSchema = z.object({
 });
 
 export type ProductSearchResult = z.infer<typeof ProductSearchResultSchema>;
+
+// Duplicated from products.contract.ts's CategoryOptionSchema rather than
+// imported — collections can't import from the products feature (FAOS
+// cross-feature import boundary, enforced by tools/validate-architecture.mjs
+// regardless of manifest `exposes`).
+export const CategoryOptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+export type CategoryOption = z.infer<typeof CategoryOptionSchema>;
+
+/**
+ * GET /api/v2/categories, narrowed to just {id, name} for the collection
+ * form's category select — see products.contract.ts's identically-named
+ * schema for why this is a paginated envelope narrowed down to `items`.
+ */
+export const CategoryOptionsResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(CategoryOptionSchema),
+  }),
+});

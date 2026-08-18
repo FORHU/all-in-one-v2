@@ -7,7 +7,7 @@ type CollectionCardProps = {
 };
 
 export function CollectionCard({ collection, onEdit }: CollectionCardProps) {
-  const childCount = collection.children.length;
+  const itemCount = collection.items.length;
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-[var(--shop-border)] bg-[var(--shop-surface)] transition-all hover:-translate-y-0.5 hover:shadow-lg">
@@ -41,10 +41,27 @@ export function CollectionCard({ collection, onEdit }: CollectionCardProps) {
           {collection.title}
         </p>
         <p className="text-xs text-[var(--shop-text-muted)]">
-          {childCount > 0 &&
-            `${childCount} item${childCount === 1 ? "" : "s"} · `}
+          {itemCount} item{itemCount === 1 ? "" : "s"} ·{" "}
           {collection.isPublic ? "Live" : "Hidden"}
         </p>
+
+        {collection.children.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {collection.children.map((child) => (
+              <button
+                key={child.id}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(child);
+                }}
+                className="rounded-full border border-[var(--shop-border)] px-2 py-1 text-[10px] font-semibold text-[var(--shop-text-muted)] hover:border-[var(--shop-accent)] hover:text-[var(--shop-accent)]"
+              >
+                {child.title}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

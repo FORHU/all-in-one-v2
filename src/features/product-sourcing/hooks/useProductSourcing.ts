@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useSafeQuery } from "@/shared/query/useSafeQuery";
 import { useSafeMutation } from "@/shared/query/useSafeMutation";
 import { notify } from "@/shared/lib/notify";
@@ -62,6 +63,8 @@ export function useCategoryOptions() {
 
 /** Import the previewed product into the local catalog. */
 export function useImportProduct() {
+  const queryClient = useQueryClient();
+
   return useSafeMutation({
     mutationFn: ({
       supplierId,
@@ -74,6 +77,16 @@ export function useImportProduct() {
     }) => importProduct({ supplierId, externalId, categoryId }),
     onSuccess: (product) => {
       notify.success(`Imported "${product.title}" into the catalog.`);
+      // Search results and the preview modal cache `alreadyImported` from
+      // before this import — without invalidating, they'd keep showing the
+      // product as not-yet-imported until an unrelated refetch (page change,
+      // new search) happened to occur.
+      queryClient.invalidateQueries({
+        queryKey: productSourcingKeys.searches(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: productSourcingKeys.details(),
+      });
     },
   });
 }

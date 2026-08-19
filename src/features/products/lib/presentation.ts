@@ -29,6 +29,10 @@ export const STATUS_STYLES: Record<
   },
 };
 
+/** Shared column template between the table's header row and each ProductRow — one place so the two grids can't drift out of alignment. */
+export const PRODUCT_GRID_COLS =
+  "grid-cols-[36px_2.3fr_1.3fr_1fr_1fr_1fr_40px]";
+
 export const VISIBILITY_LABELS: Record<ProductVisibility, string> = {
   PUBLIC: "Public",
   PRIVATE: "Private",

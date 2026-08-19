@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search as SearchIcon } from "lucide-react";
+import {
+  Search as SearchIcon,
+  Upload as UploadIcon,
+  Loader2 as Loader2Icon,
+} from "lucide-react";
 import {
   useCollections,
   useCreateCollection,
@@ -24,6 +28,7 @@ import {
 } from "../contracts/collections.contract";
 import {
   addCollectionItem,
+  uploadCollectionImage,
   type CollectionWriteInput,
 } from "../api/collections.client";
 import { collectionsKeys } from "../api/collections.keys";
@@ -70,11 +75,17 @@ function slugify(title: string): string {
 type CollectionFormModalProps = {
   /** Present = edit mode (seeded from this row). Absent = create mode. */
   collection?: Collection;
+  /** Create mode only — pre-fills the item list, e.g. from a product-table bulk selection. Ignored when `collection` is set. */
+  initialProducts?: ProductSearchResult[];
+  /** Create mode only — skips the Collection/Outfit mode picker and starts on this mode. Ignored when `collection` is set. */
+  initialMode?: CollectionMode;
   onClose: () => void;
 };
 
 export function CollectionFormModal({
   collection,
+  initialProducts,
+  initialMode,
   onClose,
 }: CollectionFormModalProps) {
   const isEdit = Boolean(collection);
@@ -82,10 +93,13 @@ export function CollectionFormModal({
   const [title, setTitle] = useState(collection?.title ?? "");
   const [slug, setSlug] = useState(collection?.slug ?? "");
   const [type, setType] = useState<CollectionType>(
-    (collection?.type as CollectionType) ?? "LOOKBOOK",
+    (collection?.type as CollectionType) ??
+      (initialMode ? MODE_TYPES[initialMode][0] : "LOOKBOOK"),
   );
   const [description, setDescription] = useState(collection?.description ?? "");
   const [imageUrl, setImageUrl] = useState(collection?.imageUrl ?? "");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const imageFileInputRef = useRef<HTMLInputElement>(null);
   const [isPublic, setIsPublic] = useState(collection?.isPublic ?? true);
   const [categoryId, setCategoryId] = useState(
     collection?.categoryId ?? NO_CATEGORY,
@@ -102,7 +116,7 @@ export function CollectionFormModal({
   const [mode, setMode] = useState<CollectionMode | null>(
     isEdit && collection
       ? modeForType(collection.type as CollectionType)
-      : null,
+      : (initialMode ?? null),
   );
   // Collapsed by default only when there's no category set yet AND the mode
   // is Outfit — "featured category" reads as "which category is this
@@ -130,7 +144,13 @@ export function CollectionFormModal({
   // them to until then.
   const [pendingItems, setPendingItems] = useState<
     { product: ProductSearchResult; slot: string; isOptional: boolean }[]
-  >([]);
+  >(
+    (initialProducts ?? []).map((product) => ({
+      product,
+      slot: "",
+      isOptional: false,
+    })),
+  );
   // Snapshot of each item's slot at focus time, so a failed save can revert
   // to the last known-good value instead of the just-typed one still sitting
   // in local state (see handleSlotBlur's onError).
@@ -426,10 +446,31 @@ export function CollectionFormModal({
     });
   };
 
-  /** Cover image can be set by pasting a URL or picking a selected product's thumbnail. */
+  /** Cover image can be set by pasting a URL, uploading a file, or picking a selected product's thumbnail. */
   const handleSetCover = (url: string | null) => {
     if (!url) return;
     setImageUrl(url);
+  };
+
+  const handleImageFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const url = await uploadCollectionImage(file, {
+        slug: slug.trim() || slugify(title) || "collection",
+        productIds: displayItems.map((i) => i.productId),
+      });
+      setImageUrl(url);
+    } catch {
+      notify.error("Image upload failed. Try again or paste a URL instead.");
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -650,10 +691,30 @@ export function CollectionFormModal({
               <input
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://…"
-                disabled={isPending}
+                placeholder="https://… or upload a file"
+                disabled={isPending || isUploadingImage}
                 className={inputClass}
               />
+              <input
+                ref={imageFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleImageFileChange}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => imageFileInputRef.current?.click()}
+                disabled={isPending || isUploadingImage}
+                title="Upload an image"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--shop-border)] text-[var(--shop-text-muted)] transition hover:border-[var(--shop-accent)] hover:text-[var(--shop-text)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isUploadingImage ? (
+                  <Loader2Icon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <UploadIcon className="h-4 w-4" />
+                )}
+              </button>
               {imageUrl.trim() && (
                 // eslint-disable-next-line @next/next/no-img-element -- arbitrary external URL, not a local asset next/image can optimize
                 <img
@@ -669,11 +730,10 @@ export function CollectionFormModal({
                 />
               )}
             </div>
-            {/* No file-upload pipeline exists yet (nothing in this app
-                persists an uploaded file to a URL) — this reuses each
-                item's already-hosted product photo as a stand-in cover
-                instead. Paste a URL above for an actual combined-look photo
-                once one exists. */}
+            {/* Uploading sets imageUrl directly from the returned S3 url —
+                this row is a quicker alternative for combined-look covers
+                that don't need a dedicated upload, reusing a photo that's
+                already hosted. */}
             {displayItems.some((i) => i.product.thumbnailUrl) && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <span className="mr-0.5 text-[10px] text-[var(--shop-text-muted)]">

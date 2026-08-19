@@ -77,7 +77,11 @@ export function FilterBar({
 
   return (
     <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <div
+        role="group"
+        aria-label="Filter by status"
+        className="flex flex-wrap items-center gap-2"
+      >
         {STATUS_CHIPS.map((chip) => {
           const on = statusFilter === chip.key;
           return (
@@ -85,6 +89,7 @@ export function FilterBar({
               key={chip.key}
               type="button"
               onClick={() => onStatusFilterChange(chip.key)}
+              aria-pressed={on}
               className="rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
               style={{
                 background: on ? "var(--shop-ink)" : "var(--shop-surface)",

@@ -22,11 +22,14 @@ export const SUPPLIER_OPTIONS = [
 
 export type SupplierOptionId = (typeof SUPPLIER_OPTIONS)[number]["id"];
 
+const SEARCH_PAGE_SIZE = 16;
+
 /** Search the given supplier's live catalog. No-ops on an empty query. */
 export function useSupplierSearch(supplierId: string, query: string, page = 1) {
   return useSafeQuery({
     queryKey: productSourcingKeys.search(supplierId, query, page),
-    queryFn: () => searchSupplierProducts(supplierId, query, page),
+    queryFn: () =>
+      searchSupplierProducts(supplierId, query, page, SEARCH_PAGE_SIZE),
     enabled: query.trim().length > 0,
     // Keep showing the previous page's results while the next page loads,
     // instead of flashing back to the loading skeleton on every page change.

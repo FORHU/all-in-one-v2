@@ -1,3 +1,6 @@
+/** Shared column template between the table's header row and each TenantRow — one place so the two grids can't drift out of alignment. */
+export const TENANT_GRID_COLS = "grid-cols-[2.2fr_1.4fr_0.8fr_1fr_40px]";
+
 export const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   active: { bg: "var(--shop-success-bg)", color: "var(--shop-success)" },
   onboarding: { bg: "var(--shop-warning-bg)", color: "var(--shop-warning)" },

@@ -1,4 +1,8 @@
 import { fetcher } from "@/shared/lib/http";
+import { env } from "@/shared/lib/env";
+import { getToken } from "@/shared/lib/token";
+import { getTenantSlug } from "@/shared/tenant/tenant-storage";
+import { ApiError } from "@/shared/errors/api-error";
 import {
   AdminProductsResponseSchema,
   AdminProductResponseSchema,
@@ -94,6 +98,61 @@ export const updateProduct = async (
     body: JSON.stringify(input),
   });
   return AdminProductResponseSchema.parse(raw).data;
+};
+
+/**
+ * POST /api/v2/file-uploads/upload — admin-only (catalog:write). Bypasses
+ * `fetcher()`: it always forces a JSON content-type, which would break the
+ * multipart boundary an upload needs. Returns the S3 URL to store as the
+ * product's `thumbnailUrl` (or a media-gallery entry's `url`).
+ *
+ * `slug` and `productId` only shape the S3 key for readability (a
+ * `{slug}-{uuid}` filename, under a supplier-name folder resolved
+ * server-side from the product id) — same convention as
+ * `uploadCollectionImage` in the collections feature.
+ */
+export const uploadProductImage = async (
+  file: File,
+  context: { slug?: string; productId?: string } = {},
+): Promise<string> => {
+  const token = getToken();
+  const tenantSlug = getTenantSlug();
+  const body = new FormData();
+  body.append("file", file);
+  body.append("folder", "products");
+  if (context.slug) body.append("slug", context.slug);
+  if (context.productId) body.append("productIds", context.productId);
+
+  const res = await fetch(
+    `${env.NEXT_PUBLIC_API_URL}/api/v2/file-uploads/upload`,
+    {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(tenantSlug ? { "x-tenant-slug": tenantSlug } : {}),
+      },
+      body,
+    },
+  );
+
+  let payload: any = null;
+  try {
+    payload = await res.json();
+  } catch {}
+
+  if (!res.ok) {
+    throw new ApiError(
+      payload?.message || "Image upload failed",
+      res.status === 401 ? "AUTH" : res.status === 403 ? "FORBIDDEN" : "SERVER",
+      { status: res.status, code: payload?.code, details: payload?.details },
+    );
+  }
+
+  const url = payload?.data?.url;
+  if (typeof url !== "string") {
+    throw new ApiError("Upload response missing a url", "SERVER");
+  }
+  return url;
 };
 
 /** DELETE /api/v2/products/:id — admin-only (catalog:delete), soft-deletes the product. */

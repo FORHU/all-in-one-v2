@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   AlertTriangle as AlertTriangleIcon,
+  PackageSearch as PackageSearchIcon,
   Plus as PlusIcon,
   RotateCw as RotateCwIcon,
   RefreshCw as RefreshCwIcon,
@@ -13,6 +14,7 @@ import type {
   ProductStatus,
 } from "../contracts/products.contract";
 import { useResyncAllProducts } from "../hooks/useProducts";
+import { PRODUCT_GRID_COLS } from "../lib/presentation";
 import { FilterBar } from "./FilterBar";
 import { BulkToolbar } from "./BulkToolbar";
 import { ProductRow } from "./ProductRow";
@@ -37,6 +39,11 @@ type ProductsTableProps = {
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  /** True once any search/status/category/brand filter has narrowed the result set — distinguishes "no products yet" from "no products match." */
+  hasActiveFilters: boolean;
+  onClearFilters: () => void;
+  /** Bulk toolbar's "Add to collection" — receives the currently-selected rows so the app layer can hand them to the collections feature (cross-feature composition can't happen inside this feature per FAOS). */
+  onAddSelectedToCollection: (products: AdminProduct[]) => void;
 };
 
 export function ProductsTable({
@@ -57,9 +64,14 @@ export function ProductsTable({
   page,
   totalPages,
   onPageChange,
+  hasActiveFilters,
+  onClearFilters,
+  onAddSelectedToCollection,
 }: ProductsTableProps) {
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  // Keyed by product id, but holds the full product object (not just a
+  // boolean) — filter/page changes swap out `rows`, so a selection has to
+  // carry its own data to survive being scrolled out of the current view.
+  const [selected, setSelected] = useState<Record<string, AdminProduct>>({});
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [quickView, setQuickView] = useState<AdminProduct | null>(null);
   const [formModal, setFormModal] = useState<
@@ -68,15 +80,39 @@ export function ProductsTable({
   const { mutate: resyncAll, isPending: isResyncing } = useResyncAllProducts();
 
   const rows = products ?? [];
-  const selectedCount = Object.values(selected).filter(Boolean).length;
   const allSelected = rows.length > 0 && rows.every((p) => selected[p.id]);
+  const selectedProducts = Object.values(selected);
 
   const toggleSelectAll = () => {
     const next = { ...selected };
     rows.forEach((p) => {
-      next[p.id] = !allSelected;
+      if (allSelected) {
+        delete next[p.id];
+      } else {
+        next[p.id] = p;
+      }
     });
     setSelected(next);
+  };
+
+  const toggleProduct = (product: AdminProduct) => {
+    setSelected((s) => {
+      const next = { ...s };
+      if (next[product.id]) {
+        delete next[product.id];
+      } else {
+        next[product.id] = product;
+      }
+      return next;
+    });
+  };
+
+  const removeSelected = (productId: string) => {
+    setSelected((s) => {
+      const next = { ...s };
+      delete next[productId];
+      return next;
+    });
   };
 
   return (
@@ -119,12 +155,16 @@ export function ProductsTable({
       />
 
       <BulkToolbar
-        selectedCount={selectedCount}
+        selectedProducts={selectedProducts}
         onClear={() => setSelected({})}
+        onAddToCollection={() => onAddSelectedToCollection(selectedProducts)}
+        onRemove={removeSelected}
       />
 
       <div className="overflow-hidden rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)]">
-        <div className="grid grid-cols-[36px_2.3fr_1.3fr_1fr_1fr_1fr_40px] items-center gap-4 border-b border-[var(--shop-border)] bg-[var(--shop-bg-soft)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
+        <div
+          className={`grid items-center gap-4 border-b border-[var(--shop-border)] bg-[var(--shop-bg-soft)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)] ${PRODUCT_GRID_COLS}`}
+        >
           <input
             type="checkbox"
             checked={allSelected}
@@ -141,12 +181,23 @@ export function ProductsTable({
         </div>
 
         {isLoading ? (
-          <div className="space-y-2 p-[18px]">
+          <div>
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
-                className="h-11 animate-pulse rounded-lg bg-[var(--shop-bg-soft)]"
-              />
+                className={`grid items-center gap-4 border-b border-[var(--shop-border)]/60 px-[18px] py-4 ${PRODUCT_GRID_COLS}`}
+              >
+                <div className="h-4 w-4 animate-pulse rounded bg-[var(--shop-bg-soft)]" />
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 flex-shrink-0 animate-pulse rounded-lg bg-[var(--shop-bg-soft)]" />
+                  <div className="h-3 w-3/4 animate-pulse rounded bg-[var(--shop-bg-soft)]" />
+                </div>
+                <div className="h-3 w-2/3 animate-pulse rounded bg-[var(--shop-bg-soft)]" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-[var(--shop-bg-soft)]" />
+                <div className="h-5 w-16 animate-pulse rounded-full bg-[var(--shop-bg-soft)]" />
+                <div className="h-5 w-16 animate-pulse rounded-full bg-[var(--shop-bg-soft)]" />
+                <div className="h-5 w-5 animate-pulse rounded bg-[var(--shop-bg-soft)]" />
+              </div>
             ))}
           </div>
         ) : isError ? (
@@ -177,23 +228,38 @@ export function ProductsTable({
             </button>
           </div>
         ) : rows.length === 0 ? (
-          <p className="px-[18px] py-8 text-center text-sm text-[var(--shop-text-muted)]">
-            No products match your search.
-          </p>
+          <div className="flex flex-col items-center gap-3 px-[18px] py-14 text-center">
+            <PackageSearchIcon
+              className="h-8 w-8 text-[var(--shop-text-muted)]"
+              strokeWidth={1.5}
+            />
+            <p className="text-sm font-semibold text-[var(--shop-text)]">
+              {hasActiveFilters
+                ? "No products match these filters."
+                : "No products yet."}
+            </p>
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={onClearFilters}
+                className="rounded-full border border-[var(--shop-border)] px-4 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)]"
+              >
+                Clear filters
+              </button>
+            ) : (
+              <p className="text-xs text-[var(--shop-text-muted)]">
+                Add your first product to start building the catalog.
+              </p>
+            )}
+          </div>
         ) : (
           rows.map((p) => (
             <ProductRow
               key={p.id}
               product={p}
               isSelected={Boolean(selected[p.id])}
-              isExpanded={Boolean(expanded[p.id])}
               isMenuOpen={openMenu === p.id}
-              onToggleSelect={() =>
-                setSelected((s) => ({ ...s, [p.id]: !s[p.id] }))
-              }
-              onToggleExpand={() =>
-                setExpanded((s) => ({ ...s, [p.id]: !s[p.id] }))
-              }
+              onToggleSelect={() => toggleProduct(p)}
               onToggleMenu={() => setOpenMenu(openMenu === p.id ? null : p.id)}
               onQuickView={() => {
                 setQuickView(p);

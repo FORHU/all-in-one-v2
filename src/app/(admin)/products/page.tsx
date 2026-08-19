@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { ProductsStatsBar } from "@/features/products/components/ProductsStatsBar";
 import { ProductsTable } from "@/features/products/components/ProductsTable";
 import { useAdminProducts } from "@/features/products/hooks/useProducts";
-import type { ProductStatus } from "@/features/products/contracts/products.contract";
+import type {
+  AdminProduct,
+  ProductStatus,
+} from "@/features/products/contracts/products.contract";
+import { CollectionFormModal } from "@/features/collections/components/CollectionFormModal";
+import type { ProductSearchResult } from "@/features/collections/contracts/collections.contract";
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -59,6 +64,35 @@ export default function ProductsPage() {
     brand: brandFilter || undefined,
   });
 
+  const hasActiveFilters = Boolean(
+    debouncedSearch || statusFilter !== "all" || categoryFilter || brandFilter,
+  );
+  const handleClearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setCategoryFilter("");
+    setBrandFilter("");
+  };
+
+  // Bulk "Add to collection" from the products table — the products and
+  // collections features can't import each other (FAOS cross-feature
+  // boundary), so this app-layer page holds the bridge: it owns the modal
+  // and translates the selected rows into the shape CollectionFormModal
+  // expects.
+  const [collectionDraftProducts, setCollectionDraftProducts] = useState<
+    ProductSearchResult[] | null
+  >(null);
+  const handleAddSelectedToCollection = (products: AdminProduct[]) => {
+    setCollectionDraftProducts(
+      products.map((p) => ({
+        id: p.id,
+        title: p.title,
+        slug: p.slug,
+        thumbnailUrl: p.thumbnailUrl,
+      })),
+    );
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
       <div className="mb-6">
@@ -92,7 +126,18 @@ export default function ProductsPage() {
         page={page}
         totalPages={data?.totalPages ?? 1}
         onPageChange={setPage}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={handleClearFilters}
+        onAddSelectedToCollection={handleAddSelectedToCollection}
       />
+
+      {collectionDraftProducts && (
+        <CollectionFormModal
+          initialProducts={collectionDraftProducts}
+          initialMode="outfit"
+          onClose={() => setCollectionDraftProducts(null)}
+        />
+      )}
     </div>
   );
 }

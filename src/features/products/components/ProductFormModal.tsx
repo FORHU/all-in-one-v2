@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { X as XIcon, Plus as PlusIcon, Star as StarIcon } from "lucide-react";
+import {
+  X as XIcon,
+  Plus as PlusIcon,
+  Star as StarIcon,
+  Upload as UploadIcon,
+  Loader2 as Loader2Icon,
+} from "lucide-react";
 import { Modal } from "@/shared/components/Modal";
 import {
   useCreateProduct,
@@ -27,6 +33,7 @@ import {
 } from "../contracts/products.contract";
 import {
   createProductMedia,
+  uploadProductImage,
   type ProductWriteInput,
   type MediaWriteInput,
 } from "../api/products.client";
@@ -173,6 +180,8 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
     product?.compareAtPrice?.toString() ?? "",
   );
   const [thumbnailUrl, setThumbnailUrl] = useState(product?.thumbnailUrl ?? "");
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const thumbnailFileInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Keep the form synced if the underlying row refetches mid-edit.
@@ -379,6 +388,27 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
     compareAtPrice: parseOptionalNumber(compareAtPrice),
     thumbnailUrl: thumbnailUrl.trim() || null,
   });
+
+  const handleThumbnailFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    setIsUploadingThumbnail(true);
+    try {
+      const url = await uploadProductImage(file, {
+        slug: slug.trim() || title.trim() || "product",
+        productId: product?.id,
+      });
+      setThumbnailUrl(url);
+    } catch {
+      notify.error("Image upload failed. Try again or paste a URL instead.");
+    } finally {
+      setIsUploadingThumbnail(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -613,13 +643,49 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
 
         <div className="col-span-2">
           <label className={labelClass}>Thumbnail URL</label>
-          <input
-            value={thumbnailUrl}
-            onChange={(e) => setThumbnailUrl(e.target.value)}
-            placeholder="https://…"
-            disabled={isPending}
-            className={inputClass}
-          />
+          <div className="flex items-start gap-3">
+            <input
+              value={thumbnailUrl}
+              onChange={(e) => setThumbnailUrl(e.target.value)}
+              placeholder="https://… or upload a file"
+              disabled={isPending || isUploadingThumbnail}
+              className={inputClass}
+            />
+            <input
+              ref={thumbnailFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleThumbnailFileChange}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => thumbnailFileInputRef.current?.click()}
+              disabled={isPending || isUploadingThumbnail}
+              title="Upload an image"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--shop-border)] text-[var(--shop-text-muted)] transition hover:border-[var(--shop-accent)] hover:text-[var(--shop-text)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isUploadingThumbnail ? (
+                <Loader2Icon className="h-4 w-4 animate-spin" />
+              ) : (
+                <UploadIcon className="h-4 w-4" />
+              )}
+            </button>
+            {thumbnailUrl.trim() && (
+              // eslint-disable-next-line @next/next/no-img-element -- arbitrary external URL, not a local asset next/image can optimize
+              <img
+                src={thumbnailUrl.trim()}
+                alt=""
+                className="h-9 w-9 shrink-0 rounded-lg border border-[var(--shop-border)] object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.visibility = "hidden";
+                }}
+                onLoad={(e) => {
+                  e.currentTarget.style.visibility = "visible";
+                }}
+              />
+            )}
+          </div>
         </div>
 
         <div className="col-span-2 border-t border-[var(--shop-border)] pt-5">

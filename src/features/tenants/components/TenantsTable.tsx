@@ -2,14 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal as MoreHorizontalIcon } from "lucide-react";
+import {
+  AlertTriangle as AlertTriangleIcon,
+  RotateCw as RotateCwIcon,
+  Store as StoreIcon,
+} from "lucide-react";
 import { useTenantStore } from "@/shared/tenant/tenant.store";
 import { notify } from "@/shared/lib/notify";
 import { useTenants } from "../hooks/useTenants";
 import { TenantsTableSkeleton } from "./TenantsTableSkeleton";
 import { TenantsStatsBar } from "./TenantsStatsBar";
 import { TenantsFilterBar } from "./TenantsFilterBar";
-import { avatarColor, initials, statusStyle } from "../lib/presentation";
+import { TenantRow } from "./TenantRow";
+import { TENANT_GRID_COLS } from "../lib/presentation";
 
 export function TenantsTable() {
   const router = useRouter();
@@ -18,6 +23,11 @@ export function TenantsTable() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+  };
 
   const filtered = useMemo(() => {
     if (!tenants) return [];
@@ -43,15 +53,25 @@ export function TenantsTable() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-dashed border-[var(--shop-danger)] bg-[var(--shop-surface)] p-10 text-center">
-        <p className="text-sm text-[var(--shop-danger)]">
-          Failed to load tenants.
+      <div
+        role="alert"
+        className="flex flex-col items-center gap-3 rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)] p-10 text-center"
+      >
+        <AlertTriangleIcon
+          className="h-5 w-5"
+          style={{ color: "var(--shop-danger)" }}
+          strokeWidth={2.25}
+        />
+        <p className="text-sm font-semibold text-[var(--shop-text)]">
+          Couldn&apos;t load tenants
         </p>
         <button
           type="button"
           onClick={() => refetch()}
-          className="mt-3 text-xs font-semibold text-[var(--shop-accent)] hover:underline"
+          className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90"
+          style={{ backgroundColor: "var(--shop-accent-dark)" }}
         >
+          <RotateCwIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
           Try again
         </button>
       </div>
@@ -60,9 +80,13 @@ export function TenantsTable() {
 
   if (!tenants || tenants.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] p-10 text-center">
-        <p className="text-sm text-[var(--shop-text-muted)]">
-          No tenants provisioned yet.
+      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] p-10 text-center">
+        <StoreIcon
+          className="h-8 w-8 text-[var(--shop-text-muted)]"
+          strokeWidth={1.5}
+        />
+        <p className="text-sm font-semibold text-[var(--shop-text)]">
+          No stores provisioned yet.
         </p>
       </div>
     );
@@ -95,7 +119,9 @@ export function TenantsTable() {
       />
 
       <div className="overflow-hidden rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)]">
-        <div className="grid grid-cols-[2.2fr_1.4fr_0.8fr_1fr_1.4fr] items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-bg-soft)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
+        <div
+          className={`grid items-center gap-3 border-b border-[var(--shop-border)] bg-[var(--shop-bg-soft)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)] ${TENANT_GRID_COLS}`}
+        >
           <span>Store</span>
           <span>Domain</span>
           <span>Products</span>
@@ -104,91 +130,35 @@ export function TenantsTable() {
         </div>
 
         {filtered.length === 0 ? (
-          <p className="px-[18px] py-8 text-center text-sm text-[var(--shop-text-muted)]">
-            No stores match your search.
-          </p>
+          <div className="flex flex-col items-center gap-3 px-[18px] py-14 text-center">
+            <StoreIcon
+              className="h-8 w-8 text-[var(--shop-text-muted)]"
+              strokeWidth={1.5}
+            />
+            <p className="text-sm font-semibold text-[var(--shop-text)]">
+              No stores match these filters.
+            </p>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="rounded-full border border-[var(--shop-border)] px-4 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)]"
+            >
+              Clear filters
+            </button>
+          </div>
         ) : (
-          filtered.map((t, i) => {
-            const style = statusStyle(t.status);
-            return (
-              <div
-                key={t.id}
-                className="grid grid-cols-[2.2fr_1.4fr_0.8fr_1fr_1.4fr] items-center gap-3 border-b border-[var(--shop-border)] px-[18px] py-3.5 last:border-b-0"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11.5px] font-bold text-white"
-                    style={{ background: avatarColor(i) }}
-                  >
-                    {initials(t.name)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-[var(--shop-text)]">
-                      {t.name}
-                    </p>
-                    <p className="font-mono text-[11px] text-[var(--shop-text-muted)]">
-                      {t.slug}
-                    </p>
-                  </div>
-                </div>
-                <span className="truncate text-xs text-[var(--shop-text-muted)]">
-                  {t.domain}
-                </span>
-                <span className="text-sm font-semibold text-[var(--shop-text)]">
-                  {t.productCount}
-                </span>
-                <span
-                  className="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
-                  style={{ background: style.bg, color: style.color }}
-                >
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: style.color }}
-                  />
-                  {t.status}
-                </span>
-                <div className="flex items-center justify-end gap-1">
-                  <button
-                    type="button"
-                    onClick={() => switchToStore(t.slug)}
-                    className="text-xs font-semibold text-[var(--shop-accent)] hover:underline"
-                  >
-                    Manage store
-                  </button>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOpenMenu(openMenu === t.id ? null : t.id)
-                      }
-                      aria-label={`Actions for ${t.name}`}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
-                    >
-                      <MoreHorizontalIcon className="h-4 w-4" />
-                    </button>
-                    {openMenu === t.id && (
-                      <div className="absolute right-0 top-8 z-10 w-[160px] rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] p-1.5 shadow-lg">
-                        <button
-                          type="button"
-                          onClick={() => copyDomain(t.domain)}
-                          className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]"
-                        >
-                          Copy domain
-                        </button>
-                        <button
-                          type="button"
-                          onClick={suspendStore}
-                          className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)]"
-                        >
-                          Suspend store
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })
+          filtered.map((t, i) => (
+            <TenantRow
+              key={t.id}
+              tenant={t}
+              avatarIndex={i}
+              isMenuOpen={openMenu === t.id}
+              onToggleMenu={() => setOpenMenu(openMenu === t.id ? null : t.id)}
+              onManageStore={() => switchToStore(t.slug)}
+              onCopyDomain={() => copyDomain(t.domain)}
+              onSuspend={suspendStore}
+            />
+          ))
         )}
       </div>
     </div>

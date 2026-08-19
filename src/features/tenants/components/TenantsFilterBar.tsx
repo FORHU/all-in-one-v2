@@ -28,7 +28,11 @@ export function TenantsFilterBar({
         placeholder="Search by store, slug, or domain"
         className="w-72 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]"
       />
-      <div className="flex flex-wrap gap-2">
+      <div
+        role="group"
+        aria-label="Filter by status"
+        className="flex flex-wrap gap-2"
+      >
         {STATUS_CHIPS.map((chip) => {
           const on = statusFilter === chip.key;
           return (
@@ -36,6 +40,7 @@ export function TenantsFilterBar({
               key={chip.key}
               type="button"
               onClick={() => onStatusFilterChange(chip.key)}
+              aria-pressed={on}
               className="rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
               style={{
                 background: on ? "var(--shop-ink)" : "var(--shop-surface)",

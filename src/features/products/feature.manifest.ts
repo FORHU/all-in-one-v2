@@ -12,6 +12,7 @@ export const featureManifest = {
     "ProductsStatsBar",
     "BrandGrid",
     "ProductFormModal",
+    "useProduct",
     "useCreateProduct",
     "useUpdateProduct",
     "useDeleteProduct",

@@ -7,6 +7,7 @@ export const productsKeys = {
   // store's cached products out of react-query's cache.
   list: (tenantSlug: string | null, params: GetAdminProductsParams) =>
     [...productsKeys.lists(), tenantSlug, params] as const,
+  detail: (id: string) => [...productsKeys.all, "detail", id] as const,
   variants: (productId: string) =>
     [...productsKeys.all, "variants", productId] as const,
   media: (productId: string) =>

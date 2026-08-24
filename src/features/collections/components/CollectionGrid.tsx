@@ -12,7 +12,20 @@ import type { Collection } from "../contracts/collections.contract";
 const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 300;
 
-export function CollectionGrid() {
+type CollectionGridProps = {
+  /** See CollectionFormModal's doc comment on the same prop — bubbled straight through. */
+  onEditProduct?: (productId: string) => void;
+  updatedProduct?: {
+    id: string;
+    title: string;
+    thumbnailUrl: string | null;
+  } | null;
+};
+
+export function CollectionGrid({
+  onEditProduct,
+  updatedProduct,
+}: CollectionGridProps = {}) {
   // tenantSlug (and therefore this query) reads localStorage, which the
   // server always sees as empty — gate on `mounted` so the first client
   // render matches the server's, same pattern CategoryGrid uses.
@@ -98,7 +111,7 @@ export function CollectionGrid() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {topLevel.map((c) => (
               <CollectionCard
                 key={c.id}
@@ -123,6 +136,8 @@ export function CollectionGrid() {
             formModal.mode === "edit" ? formModal.collection : undefined
           }
           onClose={() => setFormModal(null)}
+          onEditProduct={onEditProduct}
+          updatedProduct={updatedProduct}
         />
       )}
     </div>

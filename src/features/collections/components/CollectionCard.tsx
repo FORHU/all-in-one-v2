@@ -19,13 +19,17 @@ export function CollectionCard({ collection, onEdit }: CollectionCardProps) {
       >
         <PencilIcon className="h-3.5 w-3.5" />
       </button>
-      <div className="relative flex h-[140px] items-center justify-center overflow-hidden bg-[color-mix(in_srgb,var(--shop-ink)_6%,var(--shop-surface))]">
+      <div className="relative flex h-[240px] items-center justify-center overflow-hidden bg-[color-mix(in_srgb,var(--shop-ink)_6%,var(--shop-surface))]">
         {collection.imageUrl ? (
+          // Anchored to the top (not centered) — fashion photos are shot
+          // portrait, so centering a tall image into this frame crops off
+          // the model's head/shoulders. `object-top` keeps that intact even
+          // when the source image is a different aspect ratio than the frame.
           // eslint-disable-next-line @next/next/no-img-element -- external supplier/tenant-hosted URL, not a local asset next/image can optimize
           <img
             src={collection.imageUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover object-top"
           />
         ) : (
           <div className="flex flex-col items-center gap-1.5 text-[var(--shop-text-muted)]">

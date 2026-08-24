@@ -80,6 +80,25 @@ type CollectionFormModalProps = {
   /** Create mode only — skips the Collection/Outfit mode picker and starts on this mode. Ignored when `collection` is set. */
   initialMode?: CollectionMode;
   onClose: () => void;
+  /**
+   * Bubbles an item row's "edit product" click up to the app layer, which
+   * owns opening the products feature's ProductFormModal — the collections
+   * feature can't import that itself (FAOS cross-feature boundary). Absent
+   * = the edit button is hidden on every row (see CollectionItemRow).
+   */
+  onEditProduct?: (productId: string) => void;
+  /**
+   * The app layer passes this back in once a product edited via the above
+   * has saved, so the just-edited row's title/thumbnail reflect the change
+   * immediately instead of staying stale until this modal is reopened —
+   * `items` is local state, not re-derived from the `collection` prop after
+   * mount (see the comment on that state below).
+   */
+  updatedProduct?: {
+    id: string;
+    title: string;
+    thumbnailUrl: string | null;
+  } | null;
 };
 
 export function CollectionFormModal({
@@ -87,6 +106,8 @@ export function CollectionFormModal({
   initialProducts,
   initialMode,
   onClose,
+  onEditProduct,
+  updatedProduct,
 }: CollectionFormModalProps) {
   const isEdit = Boolean(collection);
 
@@ -151,6 +172,42 @@ export function CollectionFormModal({
       isOptional: false,
     })),
   );
+  // Patches the matching row's denormalized title/thumbnail once the app
+  // layer reports a product save (see the `updatedProduct` prop doc) —
+  // `items`/`pendingItems` are local state, not re-derived from `collection`,
+  // so without this the row would show stale data until the modal reopens.
+  useEffect(() => {
+    if (!updatedProduct) return;
+    setItems((prev) =>
+      prev.map((i) =>
+        i.productId === updatedProduct.id
+          ? {
+              ...i,
+              product: {
+                ...i.product,
+                title: updatedProduct.title,
+                thumbnailUrl: updatedProduct.thumbnailUrl,
+              },
+            }
+          : i,
+      ),
+    );
+    setPendingItems((prev) =>
+      prev.map((p) =>
+        p.product.id === updatedProduct.id
+          ? {
+              ...p,
+              product: {
+                ...p.product,
+                title: updatedProduct.title,
+                thumbnailUrl: updatedProduct.thumbnailUrl,
+              },
+            }
+          : p,
+      ),
+    );
+  }, [updatedProduct]);
+
   // Snapshot of each item's slot at focus time, so a failed save can revert
   // to the last known-good value instead of the just-typed one still sitting
   // in local state (see handleSlotBlur's onError).
@@ -837,6 +894,11 @@ export function CollectionFormModal({
                   }
                   onSetCover={handleSetCover}
                   onRemove={() => handleRemoveItem(item.id)}
+                  onEdit={
+                    onEditProduct
+                      ? () => onEditProduct(item.productId)
+                      : undefined
+                  }
                 />
               ))}
             </div>

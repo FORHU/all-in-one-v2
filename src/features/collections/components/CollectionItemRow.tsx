@@ -2,6 +2,7 @@ import {
   ChevronUp as ChevronUpIcon,
   ChevronDown as ChevronDownIcon,
   Image as ImageIcon,
+  Pencil as PencilIcon,
   X as XIcon,
 } from "lucide-react";
 import type { CollectionItem } from "../contracts/collections.contract";
@@ -19,6 +20,8 @@ type CollectionItemRowProps = {
   onOptionalToggle: (isOptional: boolean) => void;
   onSetCover: (url: string | null) => void;
   onRemove: () => void;
+  /** Absent = the app layer hasn't wired product editing here — hides the edit button rather than rendering a dead one. */
+  onEdit?: () => void;
 };
 
 /** One row in CollectionFormModal's item list — move/thumbnail/slot/optional/cover/remove for a single collection item. */
@@ -35,6 +38,7 @@ export function CollectionItemRow({
   onOptionalToggle,
   onSetCover,
   onRemove,
+  onEdit,
 }: CollectionItemRowProps) {
   return (
     <div className="flex items-start gap-2.5 rounded-lg border border-[var(--shop-border)] px-2.5 py-2">
@@ -101,6 +105,17 @@ export function CollectionItemRow({
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)] hover:text-[var(--shop-text)]"
         >
           <ImageIcon className="h-3 w-3" />
+        </button>
+      )}
+      {onEdit && (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`Edit ${item.product.title}`}
+          title="Edit product details"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)] hover:text-[var(--shop-text)]"
+        >
+          <PencilIcon className="h-3 w-3" />
         </button>
       )}
       <button

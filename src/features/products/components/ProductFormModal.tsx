@@ -125,6 +125,13 @@ type ProductFormModalProps = {
   /** Present = edit mode (seeded from this row). Absent = create mode. */
   product?: AdminProduct;
   onClose: () => void;
+  /**
+   * Fires with the saved product right after a successful create/update,
+   * before `onClose`. Optional — for a caller (e.g. the collections page)
+   * that's showing this product elsewhere too and needs the fresh title/
+   * thumbnail immediately, rather than waiting on its own next refetch.
+   */
+  onSaved?: (product: AdminProduct) => void;
 };
 
 /**
@@ -138,7 +145,11 @@ function parseOptionalNumber(value: string): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
+export function ProductFormModal({
+  product,
+  onClose,
+  onSaved,
+}: ProductFormModalProps) {
   const isEdit = Boolean(product);
 
   const [title, setTitle] = useState(product?.title ?? "");
@@ -414,7 +425,12 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
     e.preventDefault();
     setErrors({});
     if (isEdit) {
-      update(buildInput(), { onSuccess: onClose });
+      update(buildInput(), {
+        onSuccess: (updated) => {
+          onSaved?.(updated);
+          onClose();
+        },
+      });
       return;
     }
 
@@ -422,6 +438,7 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
       onSuccess: async (created) => {
         const pendingMedia = media.filter((r) => r.url.trim());
         if (pendingMedia.length === 0) {
+          onSaved?.(created);
           onClose();
           return;
         }
@@ -437,6 +454,7 @@ export function ProductFormModal({ product, onClose }: ProductFormModalProps) {
             "Product created, but some media couldn't be attached. Open it again to retry.",
           );
         }
+        onSaved?.(created);
         onClose();
       },
     });

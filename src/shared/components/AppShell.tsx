@@ -67,7 +67,7 @@ export function AppShell({
           ) : null}
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main id="admin-main-scroll" className="flex-1 overflow-y-auto">
           <div
             key={selectedTenantSlug ?? "platform"}
             className="shop-content-fade"

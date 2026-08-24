@@ -55,6 +55,17 @@ export const getAdminProducts = async (params: GetAdminProductsParams = {}) => {
   return AdminProductsResponseSchema.parse(raw).data; // throws ZodError if backend drifts
 };
 
+/**
+ * GET /api/v2/products/:id/admin — single product in the same admin
+ * (editable) shape the list/create/update calls return. For a caller that
+ * only has an id (e.g. a collection item row), not an already-loaded
+ * admin listing row.
+ */
+export const getAdminProduct = async (id: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/products/${id}/admin`);
+  return AdminProductResponseSchema.parse(raw).data;
+};
+
 export type ProductWriteInput = {
   title: string;
   slug?: string;

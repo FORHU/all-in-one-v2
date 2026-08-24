@@ -5,6 +5,7 @@ import { useTenantStore } from "@/shared/tenant/tenant.store";
 import { notify } from "@/shared/lib/notify";
 import {
   getAdminProducts,
+  getAdminProduct,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -38,6 +39,19 @@ export function useAdminProducts(params: GetAdminProductsParams = {}) {
     // Keep showing the previous page's rows while the next page loads,
     // instead of flashing back to the loading skeleton on every filter change.
     placeholderData: (prev) => prev,
+  });
+}
+
+/**
+ * Single product in the full admin (editable) shape, for a caller that only
+ * has an id — e.g. a collection item row, which only carries a denormalized
+ * {id, title, thumbnailUrl} slice, not enough to seed ProductFormModal.
+ */
+export function useProduct(id: string | null) {
+  return useSafeQuery({
+    queryKey: productsKeys.detail(id ?? ""),
+    queryFn: () => getAdminProduct(id as string),
+    enabled: Boolean(id),
   });
 }
 

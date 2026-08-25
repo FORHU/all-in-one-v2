@@ -21,6 +21,7 @@ import {
 } from "../hooks/useCollections";
 import {
   COLLECTION_TYPES,
+  SEASON_OPTIONS,
   type Collection,
   type CollectionItem,
   type CollectionType,
@@ -48,6 +49,18 @@ const TYPE_OPTIONS: DropdownOption[] = COLLECTION_TYPES.map((t) => ({
   value: t,
   label: t.charAt(0) + t.slice(1).toLowerCase().replace("_", " "),
 }));
+
+// Sentinel for "no season set" in the dropdown — sent to the backend as
+// `metadata: null` (clears it), same convention as NO_CATEGORY/NO_PARENT.
+const NO_SEASON = "";
+
+const SEASON_OPTIONS_DROPDOWN: DropdownOption[] = [
+  { value: NO_SEASON, label: "No season" },
+  ...SEASON_OPTIONS.map((s) => ({
+    value: s,
+    label: s.charAt(0) + s.slice(1).toLowerCase().replace("_", "-"),
+  })),
+];
 
 const inputClass =
   "w-full rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
@@ -126,6 +139,9 @@ export function CollectionFormModal({
     collection?.categoryId ?? NO_CATEGORY,
   );
   const [parentId, setParentId] = useState(collection?.parentId ?? NO_PARENT);
+  const [season, setSeason] = useState(
+    (collection?.metadata?.season as string | undefined) ?? NO_SEASON,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Gates a brand-new collection behind a "what kind of collection is
@@ -232,6 +248,7 @@ export function CollectionFormModal({
     setIsPublic(collection.isPublic);
     setCategoryId(collection.categoryId ?? NO_CATEGORY);
     setParentId(collection.parentId ?? NO_PARENT);
+    setSeason((collection.metadata?.season as string | undefined) ?? NO_SEASON);
     setMode(modeForType(collection.type as CollectionType));
     setCategoryDisclosureOpen(
       Boolean(collection.categoryId) ||
@@ -454,7 +471,9 @@ export function CollectionFormModal({
     imageUrl !== (collection!.imageUrl ?? "") ||
     isPublic !== collection!.isPublic ||
     categoryId !== (collection!.categoryId ?? NO_CATEGORY) ||
-    parentId !== (collection!.parentId ?? NO_PARENT);
+    parentId !== (collection!.parentId ?? NO_PARENT) ||
+    season !==
+      ((collection!.metadata?.season as string | undefined) ?? NO_SEASON);
 
   const buildInput = (): CollectionWriteInput => ({
     title,
@@ -468,6 +487,7 @@ export function CollectionFormModal({
     isPublic,
     categoryId: categoryId || null,
     parentId: parentId || null,
+    metadata: season ? { season } : null,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -684,6 +704,20 @@ export function CollectionFormModal({
                 aria-label="Type"
               />
             </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Season</label>
+            <Dropdown
+              value={season}
+              options={SEASON_OPTIONS_DROPDOWN}
+              onChange={setSeason}
+              disabled={isPending}
+              aria-label="Season"
+            />
+            <p className="mt-1 text-[10.5px] text-[var(--shop-text-muted)]">
+              Optional — lets you filter/identify looks by Summer, Winter, etc.
+            </p>
           </div>
 
           <div>

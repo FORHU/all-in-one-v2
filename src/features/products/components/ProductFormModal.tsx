@@ -190,6 +190,9 @@ export function ProductFormModal({
   const [compareAtPrice, setCompareAtPrice] = useState(
     product?.compareAtPrice?.toString() ?? "",
   );
+  // Freely editable (paste a URL or upload a file) — see
+  // reconcilePrimaryWithThumbnail below for how this stays in sync with the
+  // media gallery's starred row instead of silently drifting from it.
   const [thumbnailUrl, setThumbnailUrl] = useState(product?.thumbnailUrl ?? "");
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const thumbnailFileInputRef = useRef<HTMLInputElement>(null);
@@ -400,6 +403,34 @@ export function ProductFormModal({
     thumbnailUrl: thumbnailUrl.trim() || null,
   });
 
+  /**
+   * Keeps the media gallery's starred row honest whenever the plain
+   * Thumbnail field changes to a value the gallery didn't produce (typed,
+   * pasted, or uploaded there directly) — without this, a gallery image
+   * could stay flagged `isPrimary` (and its star button disabled) even
+   * though it's no longer what's actually shown as the thumbnail, with no
+   * way to re-select it to force a resync. Marks the matching gallery row
+   * primary if the new URL happens to equal one already in the gallery,
+   * otherwise clears every row's flag so the star buttons re-enable and
+   * stop claiming a stale image is still "the" thumbnail.
+   */
+  const reconcilePrimaryWithThumbnail = (url: string) => {
+    setMedia((prev) => {
+      const next = prev.map((r) => ({ ...r, isPrimary: r.url === url }));
+      if (isEdit) {
+        prev.forEach((before, i) => {
+          if (before.id && before.isPrimary !== next[i].isPrimary) {
+            updateMedia({
+              mediaId: before.id,
+              input: { isPrimary: next[i].isPrimary },
+            });
+          }
+        });
+      }
+      return next;
+    });
+  };
+
   const handleThumbnailFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -414,6 +445,7 @@ export function ProductFormModal({
         productId: product?.id,
       });
       setThumbnailUrl(url);
+      reconcilePrimaryWithThumbnail(url);
     } catch {
       notify.error("Image upload failed. Try again or paste a URL instead.");
     } finally {
@@ -665,6 +697,9 @@ export function ProductFormModal({
             <input
               value={thumbnailUrl}
               onChange={(e) => setThumbnailUrl(e.target.value)}
+              onBlur={(e) =>
+                reconcilePrimaryWithThumbnail(e.target.value.trim())
+              }
               placeholder="https://… or upload a file"
               disabled={isPending || isUploadingThumbnail}
               className={inputClass}
@@ -710,7 +745,7 @@ export function ProductFormModal({
           <label className={labelClass}>Media gallery ({media.length})</label>
           <p className="-mt-1 mb-3 text-[11px] text-[var(--shop-text-muted)]">
             {isEdit
-              ? "Changes save as you leave a field. The starred image is also used as the thumbnail above."
+              ? "Changes save as you leave a field. The starred image is used as the thumbnail above."
               : "Media added here is attached once you create the product below."}
           </p>
 

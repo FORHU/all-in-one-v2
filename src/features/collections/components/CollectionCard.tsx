@@ -6,8 +6,17 @@ type CollectionCardProps = {
   onEdit: (collection: Collection) => void;
 };
 
+/** "ALL_SEASON" -> "All-season" */
+function formatSeason(season: string): string {
+  return season.charAt(0) + season.slice(1).toLowerCase().replace("_", "-");
+}
+
 export function CollectionCard({ collection, onEdit }: CollectionCardProps) {
   const itemCount = collection.items.length;
+  const season =
+    typeof collection.metadata?.season === "string"
+      ? collection.metadata.season
+      : null;
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-[var(--shop-border)] bg-[var(--shop-surface)] transition-all hover:-translate-y-0.5 hover:shadow-lg">
@@ -19,6 +28,11 @@ export function CollectionCard({ collection, onEdit }: CollectionCardProps) {
       >
         <PencilIcon className="h-3.5 w-3.5" />
       </button>
+      {season && (
+        <span className="absolute left-3 top-3 z-10 rounded-full bg-[var(--shop-surface)]/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[var(--shop-text)] shadow-sm backdrop-blur">
+          {formatSeason(season)}
+        </span>
+      )}
       <div className="relative flex h-[240px] items-center justify-center overflow-hidden bg-[color-mix(in_srgb,var(--shop-ink)_6%,var(--shop-surface))]">
         {collection.imageUrl ? (
           // Anchored to the top (not centered) — fashion photos are shot

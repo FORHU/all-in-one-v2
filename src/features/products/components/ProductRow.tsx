@@ -48,7 +48,7 @@ export function ProductRow({
     ? "var(--shop-success)"
     : "var(--shop-danger)";
   const thumbnailUrl = resolveThumbnailUrl(product.thumbnailUrl);
-  const zoomImageUrl = product.images[0] ?? thumbnailUrl;
+  const zoomImageUrl = thumbnailUrl ?? product.images[0];
 
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const [menuOpensUpward, setMenuOpensUpward] = useState(false);

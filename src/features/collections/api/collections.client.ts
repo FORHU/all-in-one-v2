@@ -60,6 +60,10 @@ export type CollectionWriteInput = {
   // matching what CollectionRepository's `collectionWithItems` include
   // eagerly loads.
   parentId?: string | null;
+  // Nullable, not just optional: an explicit `null` clears it, same
+  // convention as `description`/`imageUrl`/`categoryId` above. Currently
+  // only ever set to `{ season }` or `null` by the form's Season field.
+  metadata?: Record<string, unknown> | null;
 };
 
 /** POST /api/v2/collections — admin-only (catalog:write). */

@@ -11,13 +11,15 @@ import { z } from "zod";
  * "LOOKBOOK"). Field is `title`, not `name`. There's no `isActive` —
  * visibility is `isPublic` + `isDeleted` instead. `type` distinguishes tree
  * levels seen so far but isn't documented as a closed enum, so it's kept a
- * plain string rather than guessed at as a z.enum. `imageFileId` and
- * `metadata` are deliberately not declared — unread by anything here, so
- * Zod strips them at parse time same as the password hash in
- * users.contract.ts. `items` IS declared (narrowed to what the item
- * management UI needs) — the repository's `collectionWithItems` include
- * means every collection response (list/detail/create/update) already
- * carries it.
+ * plain string rather than guessed at as a z.enum. `imageFileId` is
+ * deliberately not declared — unread by anything here, so Zod strips it at
+ * parse time same as the password hash in users.contract.ts. `metadata` IS
+ * declared (as a loose record) — the form reads/writes `metadata.season`
+ * off it, per CatalogCollection.metadata's own doc comment listing `season`
+ * as one of its vertical-specific params. `items` IS declared (narrowed to
+ * what the item management UI needs) — the repository's `collectionWithItems`
+ * include means every collection response (list/detail/create/update)
+ * already carries it.
  */
 export const CollectionItemProductSchema = z.object({
   id: z.string(),
@@ -57,6 +59,10 @@ export type Collection = {
   // Which category page (e.g. "Women") this collection is featured under —
   // null = not tied to any category. See CatalogCollection.categoryId.
   categoryId: string | null;
+  // Vertical-specific params — currently only `season` is read/written
+  // (by the form's Season field). Kept as a loose record rather than a
+  // typed shape since the backend imposes no structure on it.
+  metadata: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
   children: Collection[];
@@ -77,6 +83,7 @@ export const CollectionSchema: z.ZodType<Collection> = z.lazy(() =>
     isDeleted: z.boolean(),
     parentId: z.string().nullable(),
     categoryId: z.string().nullable(),
+    metadata: z.record(z.string(), z.unknown()).nullable().default(null),
     createdAt: z.string(),
     updatedAt: z.string(),
     children: z.array(CollectionSchema).default([]),
@@ -116,6 +123,21 @@ export const COLLECTION_TYPES = [
 ] as const;
 
 export type CollectionType = (typeof COLLECTION_TYPES)[number];
+
+/**
+ * Closed set offered by the form's Season field — stored as
+ * `metadata.season` (a free-form string server-side, so an older/foreign
+ * value read back from the API just won't match any option's label).
+ */
+export const SEASON_OPTIONS = [
+  "SPRING",
+  "SUMMER",
+  "FALL",
+  "WINTER",
+  "ALL_SEASON",
+] as const;
+
+export type Season = (typeof SEASON_OPTIONS)[number];
 
 /**
  * POST/PUT /api/v2/collections(/:id) — both re-fetch/return the row with

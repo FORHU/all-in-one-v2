@@ -5,12 +5,15 @@ import { Dropdown, type DropdownOption } from "@/shared/components/Dropdown";
 import { useCategoryOptions, useBrandCounts } from "../hooks/useProducts";
 import type { ProductStatus } from "../contracts/products.contract";
 
-const STATUS_CHIPS: { key: "all" | ProductStatus; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "DRAFT", label: "Draft" },
-  { key: "READY", label: "Ready" },
-  { key: "PUBLISHED", label: "Published" },
-  { key: "ARCHIVED", label: "Archived" },
+// Collapsed from five always-visible pill buttons into one dropdown,
+// matching the category/brand filters beside it — same filtering power in a
+// fraction of the width.
+const STATUS_DROPDOWN_OPTIONS: DropdownOption[] = [
+  { value: "all", label: "All statuses" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "READY", label: "Ready" },
+  { value: "PUBLISHED", label: "Published" },
+  { value: "ARCHIVED", label: "Archived" },
 ];
 
 const ALL = "";
@@ -22,8 +25,6 @@ type FilterBarProps = {
   onCategoryFilterChange: (categoryId: string) => void;
   brandFilter: string;
   onBrandFilterChange: (brand: string) => void;
-  search: string;
-  onSearchChange: (search: string) => void;
   resultsCount: number;
 };
 
@@ -34,8 +35,6 @@ export function FilterBar({
   onCategoryFilterChange,
   brandFilter,
   onBrandFilterChange,
-  search,
-  onSearchChange,
   resultsCount,
 }: FilterBarProps) {
   const { data: categoryOptions } = useCategoryOptions();
@@ -79,28 +78,17 @@ export function FilterBar({
     <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
       <div
         role="group"
-        aria-label="Filter by status"
+        aria-label="Filters"
         className="flex flex-wrap items-center gap-2"
       >
-        {STATUS_CHIPS.map((chip) => {
-          const on = statusFilter === chip.key;
-          return (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => onStatusFilterChange(chip.key)}
-              aria-pressed={on}
-              className="rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
-              style={{
-                background: on ? "var(--shop-ink)" : "var(--shop-surface)",
-                color: on ? "var(--shop-bg)" : "var(--shop-text-muted)",
-                borderColor: on ? "var(--shop-ink)" : "var(--shop-border)",
-              }}
-            >
-              {chip.label}
-            </button>
-          );
-        })}
+        <Dropdown
+          value={statusFilter}
+          options={STATUS_DROPDOWN_OPTIONS}
+          onChange={(v) => onStatusFilterChange(v as "all" | ProductStatus)}
+          size="sm"
+          className="w-[150px]"
+          aria-label="Filter by status"
+        />
         <Dropdown
           value={categoryFilter}
           options={categoryDropdownOptions}
@@ -118,15 +106,9 @@ export function FilterBar({
           aria-label="Filter by brand"
         />
       </div>
-      <div className="flex items-center gap-2 text-xs text-[var(--shop-text-muted)]">
-        <span>{resultsCount} results</span>
-        <input
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search title or slug…"
-          className="w-56 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-1.5 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]"
-        />
-      </div>
+      <span className="text-xs text-[var(--shop-text-muted)]">
+        {resultsCount} results
+      </span>
     </div>
   );
 }

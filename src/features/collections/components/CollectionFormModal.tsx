@@ -180,12 +180,20 @@ export function CollectionFormModal({
   // slot/isOptional are held here too since there's no item row to persist
   // them to until then.
   const [pendingItems, setPendingItems] = useState<
-    { product: ProductSearchResult; slot: string; isOptional: boolean }[]
+    {
+      product: ProductSearchResult;
+      slot: string;
+      isOptional: boolean;
+      productVariantId: string | null;
+      imageUrl: string | null;
+    }[]
   >(
     (initialProducts ?? []).map((product) => ({
       product,
       slot: "",
       isOptional: false,
+      productVariantId: null,
+      imageUrl: null,
     })),
   );
   // Patches the matching row's denormalized title/thumbnail once the app
@@ -324,6 +332,8 @@ export function CollectionFormModal({
         position: index,
         slot: p.slot || null,
         isOptional: p.isOptional,
+        productVariantId: p.productVariantId,
+        imageUrl: p.imageUrl,
         product: p.product,
       }));
 
@@ -353,7 +363,13 @@ export function CollectionFormModal({
     if (!product) return;
     setPendingItems((prev) => [
       ...prev,
-      { product, slot: "", isOptional: false },
+      {
+        product,
+        slot: "",
+        isOptional: false,
+        productVariantId: null,
+        imageUrl: null,
+      },
     ]);
     setProductQuery("");
     setDebouncedProductQuery("");
@@ -425,6 +441,41 @@ export function CollectionFormModal({
     }
     setPendingItems((prev) =>
       prev.map((p) => (p.product.id === itemId ? { ...p, isOptional } : p)),
+    );
+  };
+
+  const handleImageChange = (
+    itemId: string,
+    selection: { productVariantId: string | null; imageUrl: string | null },
+  ) => {
+    if (isEdit) {
+      const previous = items.find((i) => i.id === itemId);
+      const previousSelection = previous
+        ? {
+            productVariantId: previous.productVariantId,
+            imageUrl: previous.imageUrl,
+          }
+        : null;
+      setItems((prev) =>
+        prev.map((i) => (i.id === itemId ? { ...i, ...selection } : i)),
+      );
+      updateItem(
+        { itemId, ...selection },
+        {
+          onError: () => {
+            if (!previousSelection) return;
+            setItems((prev) =>
+              prev.map((i) =>
+                i.id === itemId ? { ...i, ...previousSelection } : i,
+              ),
+            );
+          },
+        },
+      );
+      return;
+    }
+    setPendingItems((prev) =>
+      prev.map((p) => (p.product.id === itemId ? { ...p, ...selection } : p)),
     );
   };
 
@@ -509,6 +560,8 @@ export function CollectionFormModal({
               addCollectionItem(created.id, p.product.id, index, {
                 slot: p.slot.trim() || null,
                 isOptional: p.isOptional,
+                productVariantId: p.productVariantId,
+                imageUrl: p.imageUrl,
               }),
             ),
           );
@@ -566,7 +619,7 @@ export function CollectionFormModal({
       onClose={onClose}
       title={isEdit ? "Edit collection" : "New collection"}
       subtitle={isEdit ? collection?.title : undefined}
-      maxWidthClassName="max-w-[900px]"
+      maxWidthClassName="max-w-[1200px]"
       footer={
         confirmingDelete ? (
           <div className="flex items-center gap-3 rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4">
@@ -632,8 +685,12 @@ export function CollectionFormModal({
         onSubmit={handleSubmit}
         className="flex flex-col gap-6 md:flex-row md:gap-8"
       >
-        {/* Left: collection details */}
-        <div className="flex w-full shrink-0 flex-col gap-4 md:w-[300px]">
+        {/* Left: collection details. Scrolls independently from the items
+            panel on md+ (own max-height + overflow) so reaching a field near
+            the bottom (Image URL, Public) never scrolls the already-visible
+            items list out of view — the two panes are logically separate,
+            they shouldn't share one scroll position. */}
+        <div className="flex w-full shrink-0 flex-col gap-3.5 md:w-[300px] md:max-h-[70vh] md:overflow-y-auto md:pr-1">
           <div>
             <label className={labelClass}>Title</label>
             <input
@@ -706,18 +763,27 @@ export function CollectionFormModal({
             </div>
           </div>
 
-          <div>
-            <label className={labelClass}>Season</label>
-            <Dropdown
-              value={season}
-              options={SEASON_OPTIONS_DROPDOWN}
-              onChange={setSeason}
-              disabled={isPending}
-              aria-label="Season"
-            />
-            <p className="mt-1 text-[10.5px] text-[var(--shop-text-muted)]">
-              Optional — lets you filter/identify looks by Summer, Winter, etc.
-            </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Season</label>
+              <Dropdown
+                value={season}
+                options={SEASON_OPTIONS_DROPDOWN}
+                onChange={setSeason}
+                disabled={isPending}
+                aria-label="Season"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Parent collection</label>
+              <Dropdown
+                value={parentId}
+                options={parentDropdownOptions}
+                onChange={setParentId}
+                disabled={isPending}
+                aria-label="Parent collection"
+              />
+            </div>
           </div>
 
           <div>
@@ -750,27 +816,12 @@ export function CollectionFormModal({
           </div>
 
           <div>
-            <label className={labelClass}>Parent collection</label>
-            <Dropdown
-              value={parentId}
-              options={parentDropdownOptions}
-              onChange={setParentId}
-              disabled={isPending}
-              aria-label="Parent collection"
-            />
-            <p className="mt-1 text-[10.5px] text-[var(--shop-text-muted)]">
-              e.g. nest an Outfit under a Lookbook for &quot;Shop the
-              Look&quot;.
-            </p>
-          </div>
-
-          <div>
             <label className={labelClass}>Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional description"
-              rows={3}
+              rows={2}
               disabled={isPending}
               className={inputClass}
             />
@@ -856,20 +907,49 @@ export function CollectionFormModal({
             )}
           </div>
 
-          <label className="flex items-center gap-2 text-xs font-semibold text-[var(--shop-text)]">
-            <input
-              type="checkbox"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-              disabled={isPending}
-              className="accent-[var(--shop-ink)]"
-            />
-            Public (visible on the storefront)
-          </label>
+          {/* This is the one field that decides whether customers can see
+              this at all — a plain inline checkbox buried it among a dozen
+              other quieter fields. Given its own bordered/tinted block and a
+              real switch so it reads as a status, not just another setting. */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isPublic}
+            onClick={() => setIsPublic(!isPublic)}
+            disabled={isPending}
+            className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3.5 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isPublic
+                ? "border-[var(--shop-success)]/30 bg-[var(--shop-success-bg)]"
+                : "border-[var(--shop-border)] bg-[var(--shop-bg-soft)]"
+            }`}
+          >
+            <span>
+              <span className="block text-xs font-bold text-[var(--shop-text)]">
+                {isPublic ? "Live on storefront" : "Hidden from storefront"}
+              </span>
+              <span className="mt-0.5 block text-[10.5px] text-[var(--shop-text-muted)]">
+                Customers {isPublic ? "can" : "can't"} see this{" "}
+                {mode === "outfit" ? "outfit" : "collection"} right now.
+              </span>
+            </span>
+            <span
+              className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                isPublic
+                  ? "bg-[var(--shop-success)]"
+                  : "bg-[var(--shop-border)]"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                  isPublic ? "translate-x-4" : "translate-x-0.5"
+                }`}
+              />
+            </span>
+          </button>
         </div>
 
         {/* Divider */}
-        <div className="hidden shrink-0 self-stretch border-l border-[var(--shop-border)] md:block" />
+        <div className="hidden shrink-0 self-stretch border-l border-[var(--shop-border)]/50 md:block" />
 
         {/* Right: items */}
         <div className="flex min-w-0 flex-1 flex-col">
@@ -910,7 +990,7 @@ export function CollectionFormModal({
               </p>
             </div>
           ) : (
-            <div className="max-h-[440px] space-y-1.5 overflow-y-auto">
+            <div className="max-h-[68vh] space-y-1.5 overflow-y-auto">
               {displayItems.map((item, index) => (
                 <CollectionItemRow
                   key={item.id}
@@ -925,6 +1005,9 @@ export function CollectionFormModal({
                   onSlotBlur={(slot) => handleSlotBlur(item.id, slot)}
                   onOptionalToggle={(isOptional) =>
                     handleOptionalToggle(item.id, isOptional)
+                  }
+                  onImageChange={(selection) =>
+                    handleImageChange(item.id, selection)
                   }
                   onSetCover={handleSetCover}
                   onRemove={() => handleRemoveItem(item.id)}

@@ -13,6 +13,8 @@ import {
   removeCollectionItem,
   reorderCollectionItems,
   searchProducts,
+  getProductVariants,
+  getProductMedia,
   getCategoriesForSelect,
   type GetCollectionsParams,
   type CollectionWriteInput,
@@ -95,15 +97,21 @@ export function useAddCollectionItem(collectionId: string) {
       position,
       slot,
       isOptional,
+      productVariantId,
+      imageUrl,
     }: {
       productId: string;
       position: number;
       slot?: string | null;
       isOptional?: boolean;
+      productVariantId?: string | null;
+      imageUrl?: string | null;
     }) =>
       addCollectionItem(collectionId, productId, position, {
         slot,
         isOptional,
+        productVariantId,
+        imageUrl,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: collectionsKeys.lists() });
@@ -126,6 +134,8 @@ export function useUpdateCollectionItem(collectionId: string) {
       itemId: string;
       slot?: string | null;
       isOptional?: boolean;
+      productVariantId?: string | null;
+      imageUrl?: string | null;
     }) => updateCollectionItem(collectionId, itemId, data),
   });
 }
@@ -169,6 +179,34 @@ export function useProductSearch(query: string, categoryId?: string) {
     ] as const,
     queryFn: () => searchProducts(query, categoryId),
     enabled: query.trim().length >= 2 || Boolean(categoryId),
+  });
+}
+
+/**
+ * Variant options (color/size/thumbnail) for one product's item row —
+ * `productId` undefined disables the query, so a row with no product yet
+ * (shouldn't happen, but keeps the hook safe to call unconditionally) never
+ * fires a request with `undefined` in the URL. Cached per product, so
+ * multiple item rows for the same product share one fetch.
+ */
+export function useProductVariants(productId: string | undefined) {
+  return useSafeQuery({
+    queryKey: [...collectionsKeys.all, "product-variants", productId] as const,
+    queryFn: () => getProductVariants(productId as string),
+    enabled: Boolean(productId),
+  });
+}
+
+/**
+ * Product-level gallery photos for one item row's fallback picker — see
+ * getProductMedia's doc comment. Cached per product, same convention as
+ * useProductVariants.
+ */
+export function useProductMedia(productId: string | undefined) {
+  return useSafeQuery({
+    queryKey: [...collectionsKeys.all, "product-media", productId] as const,
+    queryFn: () => getProductMedia(productId as string),
+    enabled: Boolean(productId),
   });
 }
 

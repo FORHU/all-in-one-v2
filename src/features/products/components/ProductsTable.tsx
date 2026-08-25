@@ -12,6 +12,7 @@ import { Pagination } from "@/shared/components/Pagination";
 import type {
   AdminProduct,
   ProductStatus,
+  StatusCounts,
 } from "../contracts/products.contract";
 import { useResyncAllProducts } from "../hooks/useProducts";
 import { PRODUCT_GRID_COLS } from "../lib/presentation";
@@ -20,8 +21,12 @@ import { BulkToolbar } from "./BulkToolbar";
 import { ProductRow } from "./ProductRow";
 import { ProductQuickViewModal } from "./ProductQuickViewModal";
 import { ProductFormModal } from "./ProductFormModal";
+import { ProductsStatsBar } from "./ProductsStatsBar";
 
 type ProductsTableProps = {
+  /** Rendered inline with the stats/search/action buttons instead of its own stacked row — see CollectionGrid's identically-named prop. */
+  heading?: { title: string; subtitle?: string };
+  statusCounts: StatusCounts | undefined;
   products: AdminProduct[] | undefined;
   total: number;
   isLoading: boolean;
@@ -47,6 +52,8 @@ type ProductsTableProps = {
 };
 
 export function ProductsTable({
+  heading,
+  statusCounts,
   products,
   total,
   isLoading,
@@ -117,19 +124,41 @@ export function ProductsTable({
 
   return (
     <div>
-      <div className="mb-3.5 flex justify-end gap-2.5">
+      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="mr-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+          {heading && (
+            <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
+              {heading.title}
+            </h2>
+          )}
+          <ProductsStatsBar
+            total={total}
+            statusCounts={statusCounts}
+            isLoading={isLoading}
+          />
+        </div>
+        <input
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search title or slug…"
+          className="w-56 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]"
+        />
         <button
           type="button"
           onClick={() => resyncAll(undefined)}
           disabled={isResyncing}
-          title="Refresh stock and pricing for every already-imported supplier product"
-          className="flex items-center gap-1.5 rounded-full border border-[var(--shop-border)] px-4 py-2 text-[11.5px] font-bold uppercase tracking-wide text-[var(--shop-text)] transition hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+          title={
+            isResyncing
+              ? "Queuing…"
+              : "Resync stock — refresh stock and pricing for every already-imported supplier product"
+          }
+          aria-label="Resync stock"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--shop-border)] text-[var(--shop-text-muted)] transition hover:bg-[var(--shop-bg-soft)] hover:text-[var(--shop-text)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCwIcon
-            className={`h-3.5 w-3.5 ${isResyncing ? "animate-spin" : ""}`}
+            className={`h-4 w-4 ${isResyncing ? "animate-spin" : ""}`}
             strokeWidth={2.5}
           />
-          {isResyncing ? "Queuing…" : "Resync stock"}
         </button>
         <button
           type="button"
@@ -149,8 +178,6 @@ export function ProductsTable({
         onCategoryFilterChange={onCategoryFilterChange}
         brandFilter={brandFilter}
         onBrandFilterChange={onBrandFilterChange}
-        search={search}
-        onSearchChange={onSearchChange}
         resultsCount={total}
       />
 

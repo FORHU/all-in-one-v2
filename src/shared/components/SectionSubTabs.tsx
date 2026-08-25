@@ -12,7 +12,12 @@ export function SectionSubTabs({ items }: SectionSubTabsProps) {
   const pathname = usePathname();
 
   return (
-    <div className="border-b border-[var(--shop-border)] bg-[var(--shop-surface)]">
+    // lg:hidden — the sidebar (lg:static, always visible at that breakpoint)
+    // already shows this exact same child list expanded under its parent
+    // section, so this bar would be pure duplication on desktop. Below lg
+    // the sidebar collapses to a drawer, and this becomes the only way to
+    // switch sections without opening it.
+    <div className="border-b border-[var(--shop-border)] bg-[var(--shop-surface)] lg:hidden">
       <nav
         className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 lg:px-6"
         aria-label="Section tabs"

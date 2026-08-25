@@ -8,6 +8,8 @@ import {
   CollectionResponseSchema,
   CollectionItemResponseSchema,
   ProductSearchResponseSchema,
+  ProductVariantsResponseSchema,
+  ProductMediaResponseSchema,
   CategoryOptionsResponseSchema,
   type CollectionsPage,
   type CollectionType,
@@ -102,7 +104,12 @@ export async function addCollectionItem(
   collectionId: string,
   productId: string,
   position: number,
-  extra?: { slot?: string | null; isOptional?: boolean },
+  extra?: {
+    slot?: string | null;
+    isOptional?: boolean;
+    productVariantId?: string | null;
+    imageUrl?: string | null;
+  },
 ) {
   const raw = await fetcher<unknown>(
     `/api/v2/collections/${collectionId}/items`,
@@ -122,7 +129,12 @@ export async function addCollectionItem(
 export async function updateCollectionItem(
   collectionId: string,
   itemId: string,
-  data: { slot?: string | null; isOptional?: boolean },
+  data: {
+    slot?: string | null;
+    isOptional?: boolean;
+    productVariantId?: string | null;
+    imageUrl?: string | null;
+  },
 ) {
   const raw = await fetcher<unknown>(
     `/api/v2/collections/${collectionId}/items/${itemId}`,
@@ -172,6 +184,25 @@ export async function searchProducts(query: string, categoryId?: string) {
 
   const raw = await fetcher<unknown>(`/api/v2/products/admin?${params}`);
   return ProductSearchResponseSchema.parse(raw).data.items;
+}
+
+/**
+ * GET /api/v2/products/:productId/variants — admin-only (catalog:read).
+ * Powers the per-item variant picker (color/size) in CollectionItemRow.
+ */
+export async function getProductVariants(productId: string) {
+  const raw = await fetcher<unknown>(`/api/v2/products/${productId}/variants`);
+  return ProductVariantsResponseSchema.parse(raw).data.items;
+}
+
+/**
+ * GET /api/v2/products/:productId/media — admin-only (catalog:read). The
+ * product's own gallery, for the item-level photo picker's fallback when a
+ * product's photo variety lives at the product level rather than per-variant.
+ */
+export async function getProductMedia(productId: string) {
+  const raw = await fetcher<unknown>(`/api/v2/products/${productId}/media`);
+  return ProductMediaResponseSchema.parse(raw).data.items;
 }
 
 /**

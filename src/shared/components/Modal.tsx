@@ -39,7 +39,7 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
         className={`flex max-h-[92vh] w-full ${maxWidthClassName} flex-col overflow-hidden rounded-2xl border border-[var(--shop-border)] bg-[var(--shop-surface)] shadow-xl`}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[var(--shop-border)] px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-[var(--shop-border)]/50 px-6 py-4">
           <div className="min-w-0">
             <p className="shop-display truncate text-[17px] font-semibold text-[var(--shop-text)]">
               {title}
@@ -65,7 +65,7 @@ export function Modal({
         </div>
 
         {footer && (
-          <div className="shrink-0 border-t border-[var(--shop-border)] p-6">
+          <div className="shrink-0 border-t border-[var(--shop-border)]/50 p-6">
             {footer}
           </div>
         )}

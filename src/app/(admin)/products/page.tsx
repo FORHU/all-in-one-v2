@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ProductsStatsBar } from "@/features/products/components/ProductsStatsBar";
 import { ProductsTable } from "@/features/products/components/ProductsTable";
 import { useAdminProducts } from "@/features/products/hooks/useProducts";
 import type {
@@ -95,20 +94,9 @@ export default function ProductsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-      <div className="mb-6">
-        <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
-          All Products
-        </h2>
-        <p className="mt-1 text-sm text-[var(--shop-text-muted)]">
-          Browse and manage your full product catalog.
-        </p>
-      </div>
-      <ProductsStatsBar
-        total={data?.total ?? 0}
-        statusCounts={data?.statusCounts}
-        isLoading={!mounted || isLoading}
-      />
       <ProductsTable
+        heading={{ title: "All Products" }}
+        statusCounts={data?.statusCounts}
         products={data?.items}
         total={data?.total ?? 0}
         isLoading={!mounted || isLoading}

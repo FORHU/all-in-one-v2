@@ -12,37 +12,55 @@ type ProductsStatsBarProps = {
   isLoading: boolean;
 };
 
-const CARD_CLASS =
-  "rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)] px-[22px] py-[18px]";
-const LABEL_CLASS =
-  "mb-1.5 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]";
-const VALUE_CLASS = "shop-display text-[26px] font-bold";
+/** One "123 label" segment — bolded/colored count, muted label. */
+function Stat({
+  value,
+  label,
+  color,
+}: {
+  value: number | "—";
+  label: string;
+  color: string;
+}) {
+  return (
+    <span className="whitespace-nowrap">
+      <span className="font-bold" style={{ color }}>
+        {value}
+      </span>{" "}
+      <span className="text-[var(--shop-text-muted)]">{label}</span>
+    </span>
+  );
+}
 
+// Collapsed from three padded cards into one inline stat pill — small
+// enough to sit directly beside the page title instead of taking its own
+// row, while still surfacing the same three counts at a glance and reading
+// as one unit (same rounded-pill language as the Status/Stock badges in the
+// table itself) rather than bare floating text.
 export function ProductsStatsBar({
   total,
   statusCounts,
   isLoading,
 }: ProductsStatsBarProps) {
   return (
-    <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <div className={CARD_CLASS}>
-        <p className={LABEL_CLASS}>Total Products</p>
-        <p className={VALUE_CLASS} style={{ color: "var(--shop-accent)" }}>
-          {isLoading ? "—" : total}
-        </p>
-      </div>
-      <div className={CARD_CLASS}>
-        <p className={LABEL_CLASS}>Published</p>
-        <p className={VALUE_CLASS} style={{ color: "var(--shop-success)" }}>
-          {isLoading ? "—" : (statusCounts?.PUBLISHED ?? 0)}
-        </p>
-      </div>
-      <div className={CARD_CLASS}>
-        <p className={LABEL_CLASS}>Draft</p>
-        <p className={VALUE_CLASS} style={{ color: "var(--shop-text-muted)" }}>
-          {isLoading ? "—" : (statusCounts?.DRAFT ?? 0)}
-        </p>
-      </div>
+    <div className="flex items-center gap-2.5 rounded-full border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3.5 py-1.5 text-xs">
+      <Stat
+        value={isLoading ? "—" : total}
+        label="total"
+        color="var(--shop-accent)"
+      />
+      <span className="text-[var(--shop-border)]">·</span>
+      <Stat
+        value={isLoading ? "—" : (statusCounts?.PUBLISHED ?? 0)}
+        label="published"
+        color="var(--shop-success)"
+      />
+      <span className="text-[var(--shop-border)]">·</span>
+      <Stat
+        value={isLoading ? "—" : (statusCounts?.DRAFT ?? 0)}
+        label="draft"
+        color="var(--shop-text)"
+      />
     </div>
   );
 }

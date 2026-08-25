@@ -13,6 +13,11 @@ const PAGE_SIZE = 24;
 const SEARCH_DEBOUNCE_MS = 300;
 
 type CollectionGridProps = {
+  /** Rendered inline with the search bar/Add button instead of as its own
+   * stacked block above them — keeps the page header to one row instead of
+   * two. Optional so this component still works standalone (e.g. embedded
+   * elsewhere without a page-level heading). */
+  heading?: { title: string; subtitle?: string };
   /** See CollectionFormModal's doc comment on the same prop — bubbled straight through. */
   onEditProduct?: (productId: string) => void;
   updatedProduct?: {
@@ -23,6 +28,7 @@ type CollectionGridProps = {
 };
 
 export function CollectionGrid({
+  heading,
   onEditProduct,
   updatedProduct,
 }: CollectionGridProps = {}) {
@@ -84,6 +90,18 @@ export function CollectionGrid({
   return (
     <div>
       <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
+        {heading && (
+          <div className="mr-auto flex items-baseline gap-2">
+            <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
+              {heading.title}
+            </h2>
+            {heading.subtitle && (
+              <p className="hidden text-sm text-[var(--shop-text-muted)] sm:block">
+                {heading.subtitle}
+              </p>
+            )}
+          </div>
+        )}
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}

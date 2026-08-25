@@ -9,7 +9,15 @@ import {
 import { PricingRuleFormModal } from "./PricingRuleFormModal";
 import type { PricingRule } from "../contracts/pricing-rules.contract";
 
-export function PricingRuleGrid() {
+type PricingRuleGridProps = {
+  /** Rendered inline with the rule count/Add button instead of its own
+   * stacked row above it — see CollectionGrid's identically-named prop. No
+   * `subtitle` here (unlike that one): title + rule count + button already
+   * fill the row: a full sentence alongside them would overflow it. */
+  heading?: { title: string };
+};
+
+export function PricingRuleGrid({ heading }: PricingRuleGridProps = {}) {
   // tenantSlug (and therefore this query) reads localStorage, which the
   // server always sees as empty — gate on `mounted` so the first client
   // render matches the server's, same pattern BrandGrid/CategoryGrid use.
@@ -59,10 +67,17 @@ export function PricingRuleGrid() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs text-[var(--shop-text-muted)]">
-          {rules.length} rule{rules.length === 1 ? "" : "s"}
-        </p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mr-auto flex items-baseline gap-3">
+          {heading && (
+            <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
+              {heading.title}
+            </h2>
+          )}
+          <p className="text-xs text-[var(--shop-text-muted)]">
+            {rules.length} rule{rules.length === 1 ? "" : "s"}
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setCreating(true)}

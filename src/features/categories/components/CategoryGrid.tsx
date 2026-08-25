@@ -11,7 +11,12 @@ import type { Category } from "../contracts/categories.contract";
 
 const PAGE_SIZE = 24;
 
-export function CategoryGrid() {
+type CategoryGridProps = {
+  /** Rendered inline with the Add category button instead of its own stacked row above it — see CollectionGrid's identically-named prop. */
+  heading?: { title: string; subtitle?: string };
+};
+
+export function CategoryGrid({ heading }: CategoryGridProps = {}) {
   // tenantSlug (and therefore this query) reads localStorage, which the
   // server always sees as empty — gate on `mounted` so the first client
   // render matches the server's, same pattern AppSidebar uses for `me`.
@@ -56,7 +61,19 @@ export function CategoryGrid() {
 
   return (
     <div>
-      <div className="mb-3.5 flex justify-end">
+      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
+        {heading && (
+          <div className="mr-auto flex items-baseline gap-2">
+            <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
+              {heading.title}
+            </h2>
+            {heading.subtitle && (
+              <p className="hidden text-sm text-[var(--shop-text-muted)] sm:block">
+                {heading.subtitle}
+              </p>
+            )}
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setFormModal({ mode: "create" })}

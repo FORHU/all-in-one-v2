@@ -39,6 +39,17 @@ export const CollectionItemSchema = z.object({
   // Whether this item is a required part of the look (e.g. the top) or an
   // optional add-on (e.g. a belt) — only meaningful for OUTFIT-style types.
   isOptional: z.boolean(),
+  // Which specific color/size variant represents this item — null = show
+  // the product's default variant. See CatalogCollectionItem.productVariantId.
+  productVariantId: z.string().nullable().default(null),
+  // Explicit photo override, independent of productVariantId — lets an item
+  // show one specific shot from the product's own gallery even when its
+  // variants don't carry distinct photos of their own (e.g. one color sold
+  // across several sizes, with all the visual variety living in the
+  // product's lifestyle photoshoot instead of per-variant images). Falls
+  // back to the selected variant's photo, then the product's own thumbnail,
+  // when null. See CatalogCollectionItem.imageUrl.
+  imageUrl: z.string().nullable().default(null),
   product: CollectionItemProductSchema,
 });
 
@@ -179,6 +190,56 @@ export const ProductSearchResponseSchema = z.object({
 });
 
 export type ProductSearchResult = z.infer<typeof ProductSearchResultSchema>;
+
+/**
+ * GET /api/v2/products/:productId/variants — admin variant picker, called
+ * directly (not via the products feature's client, same FAOS boundary as
+ * ProductSearchResultSchema above). Mirrors AdminProductVariantDto
+ * (all-in-one-v2-api's product.mapper.ts) narrowed to what the item-level
+ * variant picker needs; `stockAvailable` is read by that DTO too but unused
+ * here, so it's left out and Zod strips it.
+ */
+export const ProductVariantOptionSchema = z.object({
+  id: z.string(),
+  sku: z.string().nullable(),
+  title: z.string(),
+  color: z.string().nullable(),
+  size: z.string().nullable(),
+  thumbnailUrl: z.string().nullable(),
+});
+
+export type ProductVariantOption = z.infer<typeof ProductVariantOptionSchema>;
+
+export const ProductVariantsResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(ProductVariantOptionSchema),
+  }),
+});
+
+/**
+ * GET /api/v2/products/:productId/media — the product's own gallery
+ * (product-level only; ProductRepository.listMedia excludes anything linked
+ * to a specific variant, so this never overlaps with ProductVariantOption's
+ * thumbnails). Powers the item-level photo picker's fallback for products
+ * whose photo variety lives at the product level rather than per-variant
+ * (e.g. one color shot from several angles, sold across many sizes).
+ */
+export const ProductMediaOptionSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+});
+
+export type ProductMediaOption = z.infer<typeof ProductMediaOptionSchema>;
+
+export const ProductMediaResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({
+    items: z.array(ProductMediaOptionSchema),
+  }),
+});
 
 // Duplicated from products.contract.ts's CategoryOptionSchema rather than
 // imported — collections can't import from the products feature (FAOS

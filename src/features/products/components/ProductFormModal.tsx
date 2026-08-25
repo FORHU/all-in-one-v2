@@ -8,6 +8,7 @@ import {
   Star as StarIcon,
   Upload as UploadIcon,
   Loader2 as Loader2Icon,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Modal } from "@/shared/components/Modal";
 import {
@@ -741,7 +742,7 @@ export function ProductFormModal({
           </div>
         </div>
 
-        <div className="col-span-2 border-t border-[var(--shop-border)] pt-5">
+        <div className="col-span-2 border-t border-[var(--shop-border)]/50 pt-5">
           <label className={labelClass}>Media gallery ({media.length})</label>
           <p className="-mt-1 mb-3 text-[11px] text-[var(--shop-text-muted)]">
             {isEdit
@@ -750,9 +751,10 @@ export function ProductFormModal({
           </p>
 
           {media.length === 0 ? (
-            <p className="text-xs text-[var(--shop-text-muted)]">
-              No media yet.
-            </p>
+            <div className="mb-3 flex flex-col items-center gap-2 rounded-lg bg-[var(--shop-bg-soft)] py-8 text-[var(--shop-text-muted)]">
+              <ImageIcon className="h-6 w-6" strokeWidth={1.5} />
+              <span className="text-xs font-medium">No media yet</span>
+            </div>
           ) : (
             <div className="shop-scrollbar-light mb-3 max-h-72 space-y-1.5 overflow-y-auto pr-1">
               {media.map((row) => (

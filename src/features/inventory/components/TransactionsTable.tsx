@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  AlertTriangle as AlertTriangleIcon,
+  RotateCw as RotateCwIcon,
+} from "lucide-react";
 import { Pagination } from "@/shared/components/Pagination";
 import type { InventoryTransaction } from "../contracts/inventory.contract";
 import {
@@ -12,6 +16,9 @@ import {
 type TransactionsTableProps = {
   transactions: InventoryTransaction[] | undefined;
   isLoading: boolean;
+  isError: boolean;
+  error?: unknown;
+  onRetry: () => void;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -20,6 +27,9 @@ type TransactionsTableProps = {
 export function TransactionsTable({
   transactions,
   isLoading,
+  isError,
+  error,
+  onRetry,
   page,
   totalPages,
   onPageChange,
@@ -45,6 +55,33 @@ export function TransactionsTable({
                 className="h-11 animate-pulse rounded-lg bg-[var(--shop-bg-soft)]"
               />
             ))}
+          </div>
+        ) : isError ? (
+          <div role="alert" className="flex flex-col items-start gap-3 p-6">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangleIcon
+                className="h-5 w-5 flex-shrink-0"
+                style={{ color: "var(--shop-danger)" }}
+                strokeWidth={2.25}
+              />
+              <p className="text-sm font-semibold text-[var(--shop-text)]">
+                Couldn&apos;t load transactions
+              </p>
+            </div>
+            <p className="text-sm text-[var(--shop-text-muted)]">
+              {error instanceof Error
+                ? error.message
+                : "Something went wrong while fetching inventory transactions."}
+            </p>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90"
+              style={{ backgroundColor: "var(--shop-accent-dark)" }}
+            >
+              <RotateCwIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Try again
+            </button>
           </div>
         ) : rows.length === 0 ? (
           <p className="px-[18px] py-8 text-center text-sm text-[var(--shop-text-muted)]">
@@ -94,7 +131,7 @@ export function TransactionsTable({
         )}
       </div>
 
-      {!isLoading && (
+      {!isLoading && !isError && (
         <Pagination
           page={page}
           totalPages={totalPages}

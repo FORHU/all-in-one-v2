@@ -1,7 +1,14 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useSafeQuery } from "@/shared/query/useSafeQuery";
-import { getTenants } from "../api/tenants.client";
+import { useSafeMutation } from "@/shared/query/useSafeMutation";
+import { notify } from "@/shared/lib/notify";
+import {
+  getTenants,
+  updateTenantStatus,
+  type TenantStatus,
+} from "../api/tenants.client";
 import { tenantsKeys } from "../api/tenants.keys";
 
 /**
@@ -23,5 +30,28 @@ export function useTenants(options?: { enabled?: boolean }) {
     queryFn: getTenants,
     staleTime: 5 * 60 * 1000,
     enabled: options?.enabled ?? true,
+  });
+}
+
+/**
+ * PATCH /api/v2/tenants/:id — status-only edit (see the admin Tenants
+ * table's Suspend/Reactivate store action in TenantsTable/TenantRow).
+ * Narrower than a general "useUpdateTenant": this table never edits a
+ * store's name/domain/settings from here.
+ */
+export function useUpdateTenantStatus() {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: ({ id, status }: { id: string; status: TenantStatus }) =>
+      updateTenantStatus(id, status),
+    onSuccess: (tenant) => {
+      queryClient.invalidateQueries({ queryKey: tenantsKeys.lists() });
+      notify.success(
+        tenant.status === "SUSPENDED"
+          ? `${tenant.name} suspended.`
+          : `${tenant.name} reactivated.`,
+      );
+    },
   });
 }

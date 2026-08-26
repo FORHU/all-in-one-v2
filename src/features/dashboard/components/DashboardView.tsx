@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle as AlertTriangleIcon,
   RotateCw as RotateCwIcon,
+  Store as StoreIcon,
 } from "lucide-react";
 import { StatsCard, type DashboardStat } from "./StatsCard";
 import { RevenueChart } from "./RevenueChart";
@@ -11,6 +12,7 @@ import { DateRangePicker } from "./DateRangePicker";
 import { CategorySalesPanel } from "./CategorySalesPanel";
 import { SupplierAnalyticsPanel } from "./SupplierAnalyticsPanel";
 import { CustomerAnalyticsPanel } from "./CustomerAnalyticsPanel";
+import { useTenantStore } from "@/shared/tenant/tenant.store";
 import {
   useCategorySales,
   useCustomerAnalytics,
@@ -26,6 +28,18 @@ export function DashboardPanel() {
   // client render matches the server's, same pattern Products/Customers use.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // Every analytics query below is `enabled: Boolean(tenantSlug)` (see
+  // useAnalytics.ts) — at Platform scope (no store selected, same
+  // `isPlatformScope` check as app/(admin)/layout.tsx) none of them ever
+  // fire. A disabled TanStack Query reports `isLoading: false` in v5 (it's
+  // not "loading", it's "not asked"), so without this check the branches
+  // below would fall through to the real "loaded, zero data" rendering path
+  // and show things like "No sales recorded for this range" — implying an
+  // empty store rather than "no store selected." Keep this distinguishable
+  // from both the loading skeleton and the real empty-data state.
+  const tenantSlug = useTenantStore((s) => s.tenantSlug);
+  const noTenantSelected = mounted && !tenantSlug;
 
   const [range, setRange] = useState<DateRange>(() => lastNDaysRange(30));
 
@@ -101,6 +115,27 @@ export function DashboardPanel() {
               className="h-32 animate-pulse rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)]"
             />
           ))}
+        </div>
+      ) : noTenantSelected ? (
+        <div
+          role="status"
+          className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-[var(--shop-border)] bg-[var(--shop-surface)] p-6"
+        >
+          <div className="flex items-center gap-2.5">
+            <StoreIcon
+              className="h-5 w-5 flex-shrink-0"
+              style={{ color: "var(--shop-text-muted)" }}
+              strokeWidth={2.25}
+            />
+            <p className="text-sm font-semibold text-[var(--shop-text)]">
+              Select a store to view its dashboard
+            </p>
+          </div>
+          <p className="text-sm text-[var(--shop-text-muted)]">
+            You&apos;re at Platform scope, which isn&apos;t tied to a single
+            store&apos;s sales data. Choose a store from the switcher above to
+            see its metrics.
+          </p>
         </div>
       ) : daily.isError ? (
         <div

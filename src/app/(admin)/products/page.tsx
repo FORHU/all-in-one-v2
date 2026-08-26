@@ -22,6 +22,9 @@ export default function ProductsPage() {
   );
   const [categoryFilter, setCategoryFilter] = useState("");
   const [brandFilter, setBrandFilter] = useState("");
+  const [pricingRuleFilter, setPricingRuleFilter] = useState<
+    "all" | "assigned" | "unassigned"
+  >("all");
 
   // Debounce free-text search so we don't fire a request per keystroke.
   useEffect(() => {
@@ -32,7 +35,13 @@ export default function ProductsPage() {
   // A changed filter invalidates the current page number.
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, statusFilter, categoryFilter, brandFilter]);
+  }, [
+    debouncedSearch,
+    statusFilter,
+    categoryFilter,
+    brandFilter,
+    pricingRuleFilter,
+  ]);
 
   // tenantSlug (and therefore this query, gated on it inside
   // useAdminProducts) reads localStorage, which the server always sees as
@@ -61,16 +70,22 @@ export default function ProductsPage() {
     status: statusFilter === "all" ? undefined : statusFilter,
     categoryId: categoryFilter || undefined,
     brand: brandFilter || undefined,
+    pricingRule: pricingRuleFilter === "all" ? undefined : pricingRuleFilter,
   });
 
   const hasActiveFilters = Boolean(
-    debouncedSearch || statusFilter !== "all" || categoryFilter || brandFilter,
+    debouncedSearch ||
+    statusFilter !== "all" ||
+    categoryFilter ||
+    brandFilter ||
+    pricingRuleFilter !== "all",
   );
   const handleClearFilters = () => {
     setSearch("");
     setStatusFilter("all");
     setCategoryFilter("");
     setBrandFilter("");
+    setPricingRuleFilter("all");
   };
 
   // Bulk "Add to collection" from the products table — the products and
@@ -111,6 +126,8 @@ export default function ProductsPage() {
         onCategoryFilterChange={setCategoryFilter}
         brandFilter={brandFilter}
         onBrandFilterChange={setBrandFilter}
+        pricingRuleFilter={pricingRuleFilter}
+        onPricingRuleFilterChange={setPricingRuleFilter}
         page={page}
         totalPages={data?.totalPages ?? 1}
         onPageChange={setPage}

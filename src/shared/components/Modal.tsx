@@ -11,6 +11,8 @@ type ModalProps = {
   maxWidthClassName: string;
   /** Pinned below the scrollable body — action buttons, or a confirm-delete banner. Omit for a view-only modal. */
   footer?: React.ReactNode;
+  /** Overrides the body's default `p-6` — e.g. a short modal that wants less top padding so an opened dropdown's panel has more room before the body itself has to scroll. */
+  bodyClassName?: string;
   children: React.ReactNode;
 };
 
@@ -28,6 +30,7 @@ export function Modal({
   subtitle,
   maxWidthClassName,
   footer,
+  bodyClassName = "p-6",
   children,
 }: ModalProps) {
   return (
@@ -60,7 +63,9 @@ export function Modal({
           </button>
         </div>
 
-        <div className="shop-scrollbar-light flex-1 overflow-y-auto p-6">
+        <div
+          className={`shop-scrollbar-light flex-1 overflow-y-auto ${bodyClassName}`}
+        >
           {children}
         </div>
 

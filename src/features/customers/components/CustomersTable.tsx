@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle as AlertTriangleIcon,
   BadgeCheck as BadgeCheckIcon,
@@ -52,6 +52,19 @@ export function CustomersTable({
   onPageChange,
 }: CustomersTableProps) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpenMenu(null);
+        menuTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [openMenu]);
 
   // The API already applies the search/status filter and returns only this
   // page's rows — no client-side filtering left to do.
@@ -211,6 +224,7 @@ export function CustomersTable({
                   </button>
                   <div className="relative">
                     <button
+                      ref={openMenu === c.id ? menuTriggerRef : undefined}
                       type="button"
                       onClick={() =>
                         setOpenMenu(openMenu === c.id ? null : c.id)
@@ -221,30 +235,38 @@ export function CustomersTable({
                       <MoreHorizontalIcon className="h-4 w-4" />
                     </button>
                     {openMenu === c.id && (
-                      <div className="absolute right-0 top-8 z-10 w-[170px] rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] p-1.5 shadow-lg">
+                      <>
                         <button
                           type="button"
-                          onClick={() =>
-                            notAvailable(
-                              "Viewing order history isn't wired up yet.",
-                            )
-                          }
-                          className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]"
-                        >
-                          View orders
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            notAvailable(
-                              "Suspending accounts isn't wired up yet.",
-                            )
-                          }
-                          className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)]"
-                        >
-                          Suspend account
-                        </button>
-                      </div>
+                          aria-label="Close menu"
+                          className="fixed inset-0 z-40 cursor-default"
+                          onClick={() => setOpenMenu(null)}
+                        />
+                        <div className="absolute right-0 top-8 z-50 w-[170px] rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] p-1.5 shadow-lg">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              notAvailable(
+                                "Viewing order history isn't wired up yet.",
+                              )
+                            }
+                            className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]"
+                          >
+                            View orders
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              notAvailable(
+                                "Suspending accounts isn't wired up yet.",
+                              )
+                            }
+                            className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)]"
+                          >
+                            Suspend account
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>

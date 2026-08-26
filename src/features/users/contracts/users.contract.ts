@@ -54,3 +54,21 @@ export const UsersResponseSchema = z.object({
 
 export type User = z.infer<typeof UserSchema>;
 export type UsersPage = z.infer<typeof UsersResponseSchema>["data"];
+
+/** PATCH /api/v2/users/:id — returns the updated user (password stripped server-side). */
+export const UserResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: UserSchema,
+});
+
+/**
+ * DELETE /api/v2/users/:id — soft-delete. Backend returns `{ message }`
+ * rather than the row itself (see UserService.deleteUser), so there's
+ * nothing here for the caller to merge back into cached user data.
+ */
+export const DeleteUserResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: z.object({ message: z.string() }),
+});

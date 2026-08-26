@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRenameBrand } from "../hooks/useProducts";
 import type { BrandCount } from "../contracts/products.contract";
 import { Modal } from "@/shared/components/Modal";
+import { ConfirmBar } from "@/shared/components/ConfirmBar";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
@@ -53,28 +54,21 @@ export function BrandActionsModal({ brand, onClose }: BrandActionsModalProps) {
       maxWidthClassName="max-w-[440px]"
       footer={
         confirmingClear ? (
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4">
-            <p className="flex-1 text-[13px] font-semibold text-[var(--shop-danger)]">
-              Clear &quot;{brand.brand}&quot; from {brand.count} product
-              {brand.count === 1 ? "" : "s"}?
-            </p>
-            <button
-              type="button"
-              onClick={() => setConfirmingClear(false)}
-              disabled={isPending}
-              className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
-            >
-              Keep it
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmClear}
-              disabled={isPending}
-              className="rounded-lg bg-[var(--shop-danger)] px-4 py-2.5 text-[13px] font-bold text-white hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {isPending ? "Clearing…" : "Clear permanently"}
-            </button>
-          </div>
+          <ConfirmBar
+            className="rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4"
+            message={
+              <>
+                Clear &quot;{brand.brand}&quot; from {brand.count} product
+                {brand.count === 1 ? "" : "s"}?
+              </>
+            }
+            cancelLabel="Keep it"
+            confirmLabel="Clear permanently"
+            pendingLabel="Clearing…"
+            onCancel={() => setConfirmingClear(false)}
+            onConfirm={handleConfirmClear}
+            isPending={isPending}
+          />
         ) : (
           <div className="flex items-center gap-2.5">
             <button

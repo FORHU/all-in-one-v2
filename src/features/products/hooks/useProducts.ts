@@ -102,6 +102,29 @@ export function useDeleteProduct() {
   });
 }
 
+/**
+ * Bulk-archives every given product id — BulkToolbar's "Archive" action.
+ * useUpdateProduct is a per-id hook, so it can't be called in a loop (rules
+ * of hooks) for a dynamic bulk selection — this calls the `updateProduct`
+ * API client function directly instead, one request per id in parallel, and
+ * never rejects itself (Promise.allSettled) so a caller can report a mixed
+ * succeeded/failed summary instead of the whole batch erroring out on the
+ * first failure. Same invalidate-on-success pattern as useDeleteProduct.
+ */
+export function useBulkArchiveProducts() {
+  const queryClient = useQueryClient();
+
+  return useSafeMutation({
+    mutationFn: (ids: string[]) =>
+      Promise.allSettled(
+        ids.map((id) => updateProduct(id, { status: "ARCHIVED" })),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
+    },
+  });
+}
+
 export function useCategoryOptions() {
   const tenantSlug = useTenantStore((s) => s.tenantSlug);
 
@@ -286,6 +309,23 @@ export function useResyncProduct() {
       notify.success(`Refreshed "${result.title}" from its supplier.`);
     },
   });
+}
+
+/**
+ * Exposes products-list invalidation for cross-feature composition at the
+ * app layer — e.g. app/(admin)/tools/page.tsx invalidates the catalog after
+ * product-sourcing's useImportProduct succeeds, so a Products tab open in
+ * the same minute (within the global 60s staleTime) doesn't sit on a
+ * pre-import cache. App pages can't call useQueryClient directly (FAOS "App
+ * Layer Discipline" forbids importing @tanstack/react-query outside the
+ * features layer), so this wraps the invalidation in a hook the products
+ * feature owns and exposes via its manifest, instead of the page reaching
+ * into productsKeys + its own queryClient.
+ */
+export function useInvalidateProductsList() {
+  const queryClient = useQueryClient();
+  return () =>
+    queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
 }
 
 export function useRenameBrand() {

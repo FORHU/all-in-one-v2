@@ -5,6 +5,7 @@ import {
   useCreatePricingRule,
   useUpdatePricingRule,
   useDeletePricingRule,
+  useApplyPricingRuleToAll,
 } from "../hooks/usePricingRules";
 import type { PricingRule } from "../contracts/pricing-rules.contract";
 import type {
@@ -12,6 +13,7 @@ import type {
   PricingRuleSaleWriteInput,
 } from "../api/pricing-rules.client";
 import { Modal } from "@/shared/components/Modal";
+import { ConfirmBar } from "@/shared/components/ConfirmBar";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
@@ -25,10 +27,26 @@ type PricingRuleFormModalProps = {
   onClose: () => void;
 };
 
+/**
+ * Only ever called on text `isBlankOrValidNumber` has already accepted —
+ * submission is blocked while Minimum profit holds unparseable text, so this
+ * never has to silently coerce garbage to null.
+ */
 function parseOptionalNumber(value: string): number | null {
   if (value.trim() === "") return null;
-  const n = Number(value);
-  return Number.isNaN(n) ? null : n;
+  return Number(value);
+}
+
+/**
+ * True when a numeric field is blank (cleared, valid) or parses to a real
+ * finite number — false for typed-but-unparseable text like "abc", which
+ * `parseOptionalNumber` alone can't distinguish from an intentional clear
+ * (both used to silently become `null`). Gates submission and the inline
+ * error below the field.
+ */
+function isBlankOrValidNumber(value: string): boolean {
+  if (value.trim() === "") return true;
+  return Number.isFinite(Number(value));
 }
 
 /** ISO string -> `datetime-local` input value, in the browser's local time. */
@@ -71,6 +89,14 @@ export function PricingRuleFormModal({
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // Folds the grid's separate "Set as default & apply to all" button into
+  // this same Save action — that used to be a second step an admin had to
+  // remember to go back and do after creating/editing a rule, which is
+  // exactly why new imports kept missing the markup they just set up.
+  // Unchecked by default: it's still an explicit, deliberate choice (it
+  // reassigns every eligible product onto this rule), just no longer a
+  // separate screen to remember.
+  const [applyAsDefault, setApplyAsDefault] = useState(false);
 
   const onValidationError = (fields: Record<string, string[]>) => {
     const mapped: Record<string, string> = {};
@@ -80,16 +106,20 @@ export function PricingRuleFormModal({
     setErrors(mapped);
   };
 
-  const { mutate: create, isPending: isCreating } = useCreatePricingRule({
+  const { mutateAsync: create, isPending: isCreating } = useCreatePricingRule({
     onValidationError,
   });
-  const { mutate: update, isPending: isUpdating } = useUpdatePricingRule(
+  const { mutateAsync: update, isPending: isUpdating } = useUpdatePricingRule(
     rule?.id ?? "",
     { onValidationError },
   );
   const { mutate: remove, isPending: isDeleting } = useDeletePricingRule();
+  const { mutateAsync: applyToAll, isPending: isApplying } =
+    useApplyPricingRuleToAll();
 
-  const isPending = isCreating || isUpdating || isDeleting;
+  const isPending = isCreating || isUpdating || isDeleting || isApplying;
+
+  const minimumProfitValid = isBlankOrValidNumber(minimumProfit);
 
   const saleFormValid =
     !saleEnabled ||
@@ -110,6 +140,7 @@ export function PricingRuleFormModal({
 
   const dirty =
     !isEdit ||
+    applyAsDefault ||
     name !== rule!.name ||
     markupValue !== rule!.markupValue.toString() ||
     minimumProfit !== (rule!.minimumProfit?.toString() ?? "") ||
@@ -134,14 +165,22 @@ export function PricingRuleFormModal({
     };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!minimumProfitValid) return;
     setErrors({});
-    if (isEdit) {
-      update(buildInput(), { onSuccess: onClose });
-      return;
+    try {
+      const saved = isEdit
+        ? await update(buildInput())
+        : await create(buildInput());
+      if (applyAsDefault && !saved.isDefault) {
+        await applyToAll(saved.id);
+      }
+      onClose();
+    } catch {
+      // Left open on failure — the mutation's own error toast (or the
+      // onValidationError-mapped inline errors above) already explains why.
     }
-    create(buildInput(), { onSuccess: onClose });
   };
 
   const canDelete = isEdit && !rule!.isDefault && rule!.productCount === 0;
@@ -159,27 +198,16 @@ export function PricingRuleFormModal({
       maxWidthClassName="max-w-[440px]"
       footer={
         confirmingDelete ? (
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4">
-            <p className="flex-1 text-[13px] font-semibold text-[var(--shop-danger)]">
-              Delete &quot;{rule?.name}&quot;?
-            </p>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              disabled={isPending}
-              className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
-            >
-              Keep it
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmDelete}
-              disabled={isPending}
-              className="rounded-lg bg-[var(--shop-danger)] px-4 py-2.5 text-[13px] font-bold text-white hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {isDeleting ? "Deleting…" : "Delete permanently"}
-            </button>
-          </div>
+          <ConfirmBar
+            className="rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4"
+            message={<>Delete &quot;{rule?.name}&quot;?</>}
+            cancelLabel="Keep it"
+            confirmLabel="Delete permanently"
+            pendingLabel="Deleting…"
+            onCancel={() => setConfirmingDelete(false)}
+            onConfirm={handleConfirmDelete}
+            isPending={isPending}
+          />
         ) : (
           <div className="flex items-center gap-2.5">
             {isEdit && (
@@ -216,15 +244,18 @@ export function PricingRuleFormModal({
                 !dirty ||
                 !name.trim() ||
                 markupValue.trim() === "" ||
-                !saleFormValid
+                !saleFormValid ||
+                !minimumProfitValid
               }
               className="rounded-lg bg-[var(--shop-ink)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-bg)] hover:bg-[var(--shop-ink-soft)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isCreating || isUpdating
                 ? "Saving…"
-                : isEdit
-                  ? "Save changes"
-                  : "Create rule"}
+                : isApplying
+                  ? "Applying…"
+                  : isEdit
+                    ? "Save changes"
+                    : "Create rule"}
             </button>
           </div>
         )
@@ -292,6 +323,11 @@ export function PricingRuleFormModal({
             Floor on profit per unit — the price is bumped up if the percentage
             alone would leave less than this.
           </p>
+          {!minimumProfitValid && (
+            <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
+              Enter a valid number.
+            </p>
+          )}
         </div>
 
         <div className="border-t border-[var(--shop-border)] pt-4">
@@ -400,11 +436,30 @@ export function PricingRuleFormModal({
           )}
         </div>
 
-        {isEdit && rule!.isDefault && (
+        {isEdit && rule!.isDefault ? (
           <p className="rounded-lg bg-[var(--shop-bg-soft)] px-3 py-2 text-[11px] text-[var(--shop-text-muted)]">
             This is your default rule — new products and imports use it
             automatically unless given their own rule.
           </p>
+        ) : (
+          <label className="flex items-start gap-2.5 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-bg-soft)] px-3 py-2.5">
+            <input
+              type="checkbox"
+              checked={applyAsDefault}
+              onChange={(e) => setApplyAsDefault(e.target.checked)}
+              disabled={isPending}
+              className="mt-0.5 accent-[var(--shop-ink)]"
+            />
+            <span>
+              <span className="block text-[11px] font-bold text-[var(--shop-text)]">
+                Set as default &amp; apply to all
+              </span>
+              <span className="mt-0.5 block text-[10.5px] text-[var(--shop-text-muted)]">
+                Makes this the rule new imports pick up automatically, and
+                immediately reprices every eligible product onto it.
+              </span>
+            </span>
+          </label>
         )}
       </form>
     </Modal>

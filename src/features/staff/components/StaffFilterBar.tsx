@@ -1,53 +1,46 @@
 "use client";
 
-const ROLE_CHIPS = [
-  { key: "all", label: "All" },
-  { key: "Super Admin", label: "Super Admin" },
-  { key: "Admin", label: "Admin" },
-  { key: "Developer", label: "Developer" },
-] as const;
+import { Dropdown, type DropdownOption } from "@/shared/components/Dropdown";
+
+// Collapsed from four always-visible pill buttons into one dropdown, same
+// shape as features/products' FilterBar (status/category/brand).
+const ROLE_DROPDOWN_OPTIONS: DropdownOption[] = [
+  { value: "all", label: "All roles" },
+  { value: "Super Admin", label: "Super Admin" },
+  { value: "Admin", label: "Admin" },
+  { value: "Developer", label: "Developer" },
+];
 
 type StaffFilterBarProps = {
-  search: string;
-  onSearchChange: (search: string) => void;
   roleFilter: string;
   onRoleFilterChange: (role: string) => void;
+  resultsCount: number;
 };
 
 export function StaffFilterBar({
-  search,
-  onSearchChange,
   roleFilter,
   onRoleFilterChange,
+  resultsCount,
 }: StaffFilterBarProps) {
   return (
-    <div className="mb-3.5 flex flex-wrap items-center gap-3">
-      <input
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="Search staff by name or email"
-        className="w-72 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]"
-      />
-      <div className="flex flex-wrap gap-2">
-        {ROLE_CHIPS.map((chip) => {
-          const on = roleFilter === chip.key;
-          return (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => onRoleFilterChange(chip.key)}
-              className="rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
-              style={{
-                background: on ? "var(--shop-ink)" : "var(--shop-surface)",
-                color: on ? "var(--shop-bg)" : "var(--shop-text-muted)",
-                borderColor: on ? "var(--shop-ink)" : "var(--shop-border)",
-              }}
-            >
-              {chip.label}
-            </button>
-          );
-        })}
+    <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div
+        role="group"
+        aria-label="Filters"
+        className="flex flex-wrap items-center gap-2"
+      >
+        <Dropdown
+          value={roleFilter}
+          options={ROLE_DROPDOWN_OPTIONS}
+          onChange={onRoleFilterChange}
+          size="sm"
+          className="w-[150px]"
+          aria-label="Filter by role"
+        />
       </div>
+      <span className="text-xs text-[var(--shop-text-muted)]">
+        {resultsCount} results
+      </span>
     </div>
   );
 }

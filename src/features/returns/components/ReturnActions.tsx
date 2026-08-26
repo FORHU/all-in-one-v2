@@ -55,6 +55,27 @@ export function ReturnActions({
   const [amount, setAmount] = useState(() => Number(orderTotal).toFixed(2));
   const [reason, setReason] = useState(RETURN_REASON_OPTIONS[0].value);
   const [confirmingRefund, setConfirmingRefund] = useState(false);
+  const [amountError, setAmountError] = useState<string | null>(null);
+
+  // Ceiling for a refund on this return: the order's total. We aren't handed
+  // "amount already refunded so far" as a prop, so the order total is the
+  // best available upper bound — still catches the common mistake of a typo
+  // adding an extra digit and refunding far more than the order was worth.
+  const maxRefundAmount = Number(orderTotal);
+
+  const validateAmount = (value: string): string | null => {
+    const parsed = Number(value);
+    if (value.trim() === "" || Number.isNaN(parsed)) {
+      return "Enter a refund amount.";
+    }
+    if (parsed <= 0) {
+      return "Refund amount must be greater than 0.";
+    }
+    if (parsed > maxRefundAmount) {
+      return `Refund can't exceed the order total of ${formatMoney(orderTotal, currency)}.`;
+    }
+    return null;
+  };
 
   const statusBadge = (
     <span
@@ -170,33 +191,53 @@ export function ReturnActions({
             </button>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-bg-soft)] p-2.5">
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              aria-label="Refund amount"
-              className="w-24 rounded-md border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2 py-1 text-[11px] text-[var(--shop-text)]"
-            />
-            <Dropdown
-              value={reason}
-              options={RETURN_REASON_OPTIONS}
-              onChange={setReason}
-              size="sm"
-              aria-label="Refund reason"
-              className="w-40"
-            />
-            <button
-              type="button"
-              onClick={() => setConfirmingRefund(true)}
-              disabled={!amount || Number(amount) <= 0}
-              className="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
-              style={{ backgroundColor: "var(--shop-accent-dark)" }}
-            >
-              Issue refund
-            </button>
+          <div className="flex flex-col gap-1.5 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-bg-soft)] p-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="number"
+                min="0.01"
+                max={maxRefundAmount}
+                step="0.01"
+                value={amount}
+                onChange={(e) => {
+                  setAmount(e.target.value);
+                  if (amountError) setAmountError(null);
+                }}
+                aria-label="Refund amount"
+                aria-invalid={amountError ? true : undefined}
+                className="w-24 rounded-md border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2 py-1 text-[11px] text-[var(--shop-text)]"
+              />
+              <Dropdown
+                value={reason}
+                options={RETURN_REASON_OPTIONS}
+                onChange={setReason}
+                size="sm"
+                aria-label="Refund reason"
+                className="w-40"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const error = validateAmount(amount);
+                  if (error) {
+                    setAmountError(error);
+                    return;
+                  }
+                  setAmountError(null);
+                  setConfirmingRefund(true);
+                }}
+                disabled={!amount || Number(amount) <= 0}
+                className="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ backgroundColor: "var(--shop-accent-dark)" }}
+              >
+                Issue refund
+              </button>
+            </div>
+            {amountError && (
+              <p className="text-[11px] text-[var(--shop-danger)]">
+                {amountError}
+              </p>
+            )}
           </div>
         )}
       </div>

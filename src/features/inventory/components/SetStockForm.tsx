@@ -5,6 +5,7 @@ import { PackageCheck as PackageCheckIcon } from "lucide-react";
 import { useSetStock } from "../hooks/useStock";
 import { useLocations } from "../hooks/useLocations";
 import { Dropdown, type DropdownOption } from "@/shared/components/Dropdown";
+import { VariantPicker } from "./VariantPicker";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
@@ -39,6 +40,17 @@ export function SetStockForm({
   const { mutate: submit, isPending } = useSetStock();
 
   const effectiveVariantId = fixedVariantId ?? variantId;
+
+  // The variant field is fully removed from this grid once it's a picker
+  // (it renders in its own block above instead of an inline input) — the
+  // remaining columns shift accordingly. fixedVariantId keeps the original
+  // 5-column layout, whose Dropdown already fills the empty variant slot.
+  const valueGridColsClass = fixedVariantId
+    ? "sm:grid-cols-[1.4fr_1.4fr_0.8fr_0.8fr_auto]"
+    : fixedLocationId
+      ? "sm:grid-cols-[0.8fr_0.8fr_auto]"
+      : "sm:grid-cols-[1.4fr_0.8fr_0.8fr_auto]";
+
   const canSubmit =
     Boolean(effectiveVariantId.trim()) &&
     Boolean(locationId) &&
@@ -76,16 +88,12 @@ export function SetStockForm({
       <h3 className="mb-3.5 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]">
         Set Stock
       </h3>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1.4fr_0.8fr_0.8fr_auto]">
-        {!fixedVariantId && (
-          <input
-            value={variantId}
-            onChange={(e) => setVariantId(e.target.value)}
-            placeholder="Variant ID"
-            disabled={isPending}
-            className={inputClass}
-          />
-        )}
+      {!fixedVariantId && (
+        <div className="mb-3">
+          <VariantPicker variantId={variantId} onChange={setVariantId} />
+        </div>
+      )}
+      <div className={`grid grid-cols-1 gap-3 ${valueGridColsClass}`}>
         {!fixedLocationId && (
           <Dropdown
             value={locationId}

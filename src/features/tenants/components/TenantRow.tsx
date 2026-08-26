@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MoreHorizontal as MoreHorizontalIcon } from "lucide-react";
+import { ConfirmBar } from "@/shared/components/ConfirmBar";
 import type { Tenant } from "../contracts/tenants.contract";
 import {
   TENANT_GRID_COLS,
@@ -10,11 +11,12 @@ import {
   statusStyle,
 } from "../lib/presentation";
 
-// Rough height of the actions menu (2 items + container padding) — used to
-// decide whether it has room to open downward before it's even rendered,
-// since the table's rounded-corner container clips anything that would
-// render outside it.
-const MENU_HEIGHT_ESTIMATE = 100;
+// Rough height of the actions menu — sized for the taller of the two states
+// it can show (the suspend/reactivate confirm banner, not just the 2 plain
+// items) — used to decide whether it has room to open downward before it's
+// even rendered, since the table's rounded-corner container clips anything
+// that would render outside it.
+const MENU_HEIGHT_ESTIMATE = 140;
 
 type TenantRowProps = {
   tenant: Tenant;
@@ -24,6 +26,9 @@ type TenantRowProps = {
   onManageStore: () => void;
   onCopyDomain: () => void;
   onSuspend: () => void;
+  onReactivate: () => void;
+  /** Shared mutation pending flag — only meaningful for the one row whose menu is open, since only one menu can be open at a time. */
+  isUpdatingStatus: boolean;
 };
 
 export function TenantRow({
@@ -34,11 +39,25 @@ export function TenantRow({
   onManageStore,
   onCopyDomain,
   onSuspend,
+  onReactivate,
+  isUpdatingStatus,
 }: TenantRowProps) {
   const style = statusStyle(tenant.status);
+  const isActive = tenant.status.toUpperCase() === "ACTIVE";
+  const isSuspended = tenant.status.toUpperCase() === "SUSPENDED";
 
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const [menuOpensUpward, setMenuOpensUpward] = useState(false);
+  // Confirm-before-you-fire banner for the suspend/reactivate action — same
+  // swap-in-place convention as BrandActionsModal/StaffAccountModal's
+  // danger-confirm footers, adapted to this row's small actions menu instead
+  // of a modal footer.
+  const [confirmingStatusChange, setConfirmingStatusChange] = useState(false);
+
+  useEffect(() => {
+    if (!isMenuOpen) setConfirmingStatusChange(false);
+  }, [isMenuOpen]);
+
   useEffect(() => {
     if (!isMenuOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -57,6 +76,14 @@ export function TenantRow({
       setMenuOpensUpward(window.innerHeight - bottom < MENU_HEIGHT_ESTIMATE);
     }
     onToggleMenu();
+  };
+
+  const handleConfirmStatusChange = () => {
+    if (isActive) {
+      onSuspend();
+    } else if (isSuspended) {
+      onReactivate();
+    }
   };
 
   return (
@@ -124,26 +151,61 @@ export function TenantRow({
                 role="menu"
                 aria-label={`Actions for ${tenant.name}`}
                 className={[
-                  "absolute right-0 z-50 w-[160px] rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] p-1.5 shadow-lg",
+                  "absolute right-0 z-50 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] shadow-lg",
+                  confirmingStatusChange
+                    ? "w-[220px] p-2.5"
+                    : "w-[160px] p-1.5",
                   menuOpensUpward ? "bottom-8" : "top-8",
                 ].join(" ")}
               >
-                <button
-                  role="menuitem"
-                  type="button"
-                  onClick={onCopyDomain}
-                  className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]"
-                >
-                  Copy domain
-                </button>
-                <button
-                  role="menuitem"
-                  type="button"
-                  onClick={onSuspend}
-                  className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)]"
-                >
-                  Suspend store
-                </button>
+                {confirmingStatusChange ? (
+                  <ConfirmBar
+                    size="sm"
+                    variant={isActive ? "danger" : "success"}
+                    message={
+                      isActive
+                        ? `Suspend ${tenant.name}? Its storefront goes offline immediately.`
+                        : `Reactivate ${tenant.name}? Its storefront goes back online immediately.`
+                    }
+                    cancelLabel={isActive ? "Keep it live" : "Cancel"}
+                    confirmLabel={isActive ? "Suspend" : "Reactivate"}
+                    pendingLabel="Working…"
+                    onCancel={() => setConfirmingStatusChange(false)}
+                    onConfirm={handleConfirmStatusChange}
+                    isPending={isUpdatingStatus}
+                  />
+                ) : (
+                  <>
+                    <button
+                      role="menuitem"
+                      type="button"
+                      onClick={onCopyDomain}
+                      className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]"
+                    >
+                      Copy domain
+                    </button>
+                    {isActive && (
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={() => setConfirmingStatusChange(true)}
+                        className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)]"
+                      >
+                        Suspend store
+                      </button>
+                    )}
+                    {isSuspended && (
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={() => setConfirmingStatusChange(true)}
+                        className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-success)] hover:bg-[var(--shop-success-bg)]"
+                      >
+                        Reactivate store
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </>
           )}

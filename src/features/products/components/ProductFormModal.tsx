@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { Modal } from "@/shared/components/Modal";
+import { ConfirmBar } from "@/shared/components/ConfirmBar";
 import {
   useCreateProduct,
   useUpdateProduct,
@@ -139,11 +140,25 @@ type ProductFormModalProps = {
  * Parses a form's numeric input string to a number, or null when blank —
  * null (not undefined) so a cleared field is sent as "clear this value"
  * rather than being dropped from the request entirely. See ProductWriteInput.
+ * Only ever called on text `isBlankOrValidNumber` has already accepted —
+ * submission is blocked while a Price/Sale price/Compare-at field holds
+ * unparseable text, so this never has to silently coerce garbage to null.
  */
 function parseOptionalNumber(value: string): number | null {
   if (value.trim() === "") return null;
-  const n = Number(value);
-  return Number.isNaN(n) ? null : n;
+  return Number(value);
+}
+
+/**
+ * True when a numeric field is blank (cleared, valid) or parses to a real
+ * finite number — false for typed-but-unparseable text like "abc", which
+ * `parseOptionalNumber` alone can't distinguish from an intentional clear
+ * (both used to silently become `null`). Gates submission and the inline
+ * error below each of these fields.
+ */
+function isBlankOrValidNumber(value: string): boolean {
+  if (value.trim() === "") return true;
+  return Number.isFinite(Number(value));
 }
 
 export function ProductFormModal({
@@ -372,6 +387,12 @@ export function ProductFormModal({
 
   const isPending = isCreating || isUpdating || isDeleting;
 
+  const priceValid = isBlankOrValidNumber(price);
+  const salePriceValid = isBlankOrValidNumber(salePrice);
+  const compareAtPriceValid = isBlankOrValidNumber(compareAtPrice);
+  const hasInvalidNumberField =
+    !priceValid || !salePriceValid || !compareAtPriceValid;
+
   const dirty =
     !isEdit ||
     title !== product!.title ||
@@ -456,6 +477,7 @@ export function ProductFormModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasInvalidNumberField) return;
     setErrors({});
     if (isEdit) {
       update(buildInput(), {
@@ -508,27 +530,20 @@ export function ProductFormModal({
       maxWidthClassName="max-w-[760px]"
       footer={
         confirmingDelete ? (
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4">
-            <p className="flex-1 text-[13px] font-semibold text-[var(--shop-danger)]">
-              Delete &quot;{product?.title}&quot;? This can&apos;t be undone.
-            </p>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              disabled={isPending}
-              className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
-            >
-              Keep it
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmDelete}
-              disabled={isPending}
-              className="rounded-lg bg-[var(--shop-danger)] px-4 py-2.5 text-[13px] font-bold text-white hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {isDeleting ? "Deleting…" : "Delete permanently"}
-            </button>
-          </div>
+          <ConfirmBar
+            className="rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4"
+            message={
+              <>
+                Delete &quot;{product?.title}&quot;? This can&apos;t be undone.
+              </>
+            }
+            cancelLabel="Keep it"
+            confirmLabel="Delete permanently"
+            pendingLabel="Deleting…"
+            onCancel={() => setConfirmingDelete(false)}
+            onConfirm={handleConfirmDelete}
+            isPending={isPending}
+          />
         ) : (
           <div className="flex items-center gap-2.5">
             {isEdit && (
@@ -553,7 +568,9 @@ export function ProductFormModal({
             <button
               type="submit"
               form="product-form"
-              disabled={isPending || !dirty || !title.trim()}
+              disabled={
+                isPending || !dirty || !title.trim() || hasInvalidNumberField
+              }
               className="rounded-lg bg-[var(--shop-ink)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-bg)] hover:bg-[var(--shop-ink-soft)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isCreating || isUpdating
@@ -666,6 +683,11 @@ export function ProductFormModal({
             disabled={isPending}
             className={inputClass}
           />
+          {!priceValid && (
+            <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
+              Enter a valid number.
+            </p>
+          )}
         </div>
 
         <div>
@@ -678,6 +700,11 @@ export function ProductFormModal({
             disabled={isPending}
             className={inputClass}
           />
+          {!salePriceValid && (
+            <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
+              Enter a valid number.
+            </p>
+          )}
         </div>
 
         <div>
@@ -690,6 +717,11 @@ export function ProductFormModal({
             disabled={isPending}
             className={inputClass}
           />
+          {!compareAtPriceValid && (
+            <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
+              Enter a valid number.
+            </p>
+          )}
         </div>
 
         <div className="col-span-2">

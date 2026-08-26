@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useTenantStore } from "@/shared/tenant/tenant.store";
 import { notify } from "@/shared/lib/notify";
-import { useTenants } from "../hooks/useTenants";
+import { useTenants, useUpdateTenantStatus } from "../hooks/useTenants";
 import { TenantsTableSkeleton } from "./TenantsTableSkeleton";
 import { TenantsStatsBar } from "./TenantsStatsBar";
 import { TenantsFilterBar } from "./TenantsFilterBar";
@@ -19,6 +19,8 @@ import { TENANT_GRID_COLS } from "../lib/presentation";
 export function TenantsTable() {
   const router = useRouter();
   const { data: tenants, isLoading, error, refetch } = useTenants();
+  const { mutate: updateStatus, isPending: isUpdatingStatus } =
+    useUpdateTenantStatus();
   const setTenantSlug = useTenantStore((s) => s.setTenantSlug);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -103,9 +105,22 @@ export function TenantsTable() {
     setOpenMenu(null);
   };
 
-  const suspendStore = () => {
-    notify.info("Suspending stores isn't available yet.");
-    setOpenMenu(null);
+  // Closing the menu on success (rather than leaving TenantRow's confirm
+  // banner open) mirrors copyDomain's setOpenMenu(null) below — the row's
+  // own status badge (already sourced from this same tenants list) is what
+  // shows the result once the invalidated query refetches.
+  const suspendStore = (id: string) => {
+    updateStatus(
+      { id, status: "SUSPENDED" },
+      { onSuccess: () => setOpenMenu(null) },
+    );
+  };
+
+  const reactivateStore = (id: string) => {
+    updateStatus(
+      { id, status: "ACTIVE" },
+      { onSuccess: () => setOpenMenu(null) },
+    );
   };
 
   return (
@@ -156,7 +171,9 @@ export function TenantsTable() {
               onToggleMenu={() => setOpenMenu(openMenu === t.id ? null : t.id)}
               onManageStore={() => switchToStore(t.slug)}
               onCopyDomain={() => copyDomain(t.domain)}
-              onSuspend={suspendStore}
+              onSuspend={() => suspendStore(t.id)}
+              onReactivate={() => reactivateStore(t.id)}
+              isUpdatingStatus={isUpdatingStatus}
             />
           ))
         )}

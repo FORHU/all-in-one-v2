@@ -14,7 +14,8 @@ import type {
   ProductStatus,
   StatusCounts,
 } from "../contracts/products.contract";
-import { useResyncAllProducts } from "../hooks/useProducts";
+import { useResyncAllProducts, useCreateProduct } from "../hooks/useProducts";
+import type { ProductWriteInput } from "../api/products.client";
 import { PRODUCT_GRID_COLS } from "../lib/presentation";
 import { FilterBar } from "./FilterBar";
 import { BulkToolbar } from "./BulkToolbar";
@@ -22,6 +23,26 @@ import { ProductRow } from "./ProductRow";
 import { ProductQuickViewModal } from "./ProductQuickViewModal";
 import { ProductFormModal } from "./ProductFormModal";
 import { ProductsStatsBar } from "./ProductsStatsBar";
+
+/** Copies a product's writable fields for the row menu's "Duplicate" action.
+ * Slug is intentionally omitted (not just blanked) — passing `undefined`
+ * makes createProduct derive a fresh, guaranteed-unique slug from the title
+ * the same way create mode's blank Slug field does, instead of colliding
+ * with the original product's slug. */
+function buildDuplicateInput(product: AdminProduct): ProductWriteInput {
+  return {
+    title: `${product.title} (copy)`,
+    brand: product.brand,
+    categoryId: product.category?.id ?? null,
+    pricingRuleId: product.pricingRule?.id ?? null,
+    status: product.status,
+    visibility: product.visibility,
+    price: product.price,
+    salePrice: product.salePrice,
+    compareAtPrice: product.compareAtPrice,
+    thumbnailUrl: product.thumbnailUrl,
+  };
+}
 
 type ProductsTableProps = {
   /** Rendered inline with the stats/search/action buttons instead of its own stacked row — see CollectionGrid's identically-named prop. */
@@ -41,6 +62,8 @@ type ProductsTableProps = {
   onCategoryFilterChange: (categoryId: string) => void;
   brandFilter: string;
   onBrandFilterChange: (brand: string) => void;
+  pricingRuleFilter: "all" | "assigned" | "unassigned";
+  onPricingRuleFilterChange: (value: "all" | "assigned" | "unassigned") => void;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -68,6 +91,8 @@ export function ProductsTable({
   onCategoryFilterChange,
   brandFilter,
   onBrandFilterChange,
+  pricingRuleFilter,
+  onPricingRuleFilterChange,
   page,
   totalPages,
   onPageChange,
@@ -85,6 +110,18 @@ export function ProductsTable({
     { mode: "create" } | { mode: "edit"; product: AdminProduct } | null
   >(null);
   const { mutate: resyncAll, isPending: isResyncing } = useResyncAllProducts();
+  const { mutate: duplicateProduct } = useCreateProduct();
+  // Which row triggered "Duplicate" — ProductRow only holds callback props
+  // (no mutations of its own), so this lives here alongside the mutation
+  // that actually performs it, same reasoning as `openMenu`/`quickView` above.
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+  const handleDuplicate = (product: AdminProduct) => {
+    setDuplicatingId(product.id);
+    duplicateProduct(buildDuplicateInput(product), {
+      onSettled: () => setDuplicatingId(null),
+    });
+  };
 
   const rows = products ?? [];
   const allSelected = rows.length > 0 && rows.every((p) => selected[p.id]);
@@ -178,6 +215,8 @@ export function ProductsTable({
         onCategoryFilterChange={onCategoryFilterChange}
         brandFilter={brandFilter}
         onBrandFilterChange={onBrandFilterChange}
+        pricingRuleFilter={pricingRuleFilter}
+        onPricingRuleFilterChange={onPricingRuleFilterChange}
         resultsCount={total}
       />
 
@@ -296,6 +335,8 @@ export function ProductsTable({
                 setFormModal({ mode: "edit", product: p });
                 setOpenMenu(null);
               }}
+              onDuplicate={() => handleDuplicate(p)}
+              isDuplicating={duplicatingId === p.id}
             />
           ))
         )}

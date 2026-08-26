@@ -1,5 +1,9 @@
 import { fetcher } from "@/shared/lib/http";
-import { UsersResponseSchema } from "../contracts/users.contract";
+import {
+  UsersResponseSchema,
+  UserResponseSchema,
+  DeleteUserResponseSchema,
+} from "../contracts/users.contract";
 
 export type GetUsersParams = {
   page?: number;
@@ -22,3 +26,26 @@ export const getUsers = async (params: GetUsersParams = {}) => {
   const raw = await fetcher<unknown>(`/api/v2/users${qs ? `?${qs}` : ""}`);
   return UsersResponseSchema.parse(raw).data; // throws ZodError if backend drifts
 };
+
+/** PATCH /api/v2/users/:id — admin-only (platform:manage). Narrow on purpose — see UserController.update. */
+export type UpdateUserInput = {
+  name?: string;
+  role?: string;
+  isActive?: boolean;
+};
+
+export async function updateUser(id: string, input: UpdateUserInput) {
+  const raw = await fetcher<unknown>(`/api/v2/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  return UserResponseSchema.parse(raw).data;
+}
+
+/** DELETE /api/v2/users/:id — admin-only (platform:manage), soft-deletes. */
+export async function removeUser(id: string) {
+  const raw = await fetcher<unknown>(`/api/v2/users/${id}`, {
+    method: "DELETE",
+  });
+  return DeleteUserResponseSchema.parse(raw).data;
+}

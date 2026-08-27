@@ -30,3 +30,10 @@ export const TenantsResponseSchema = z.object({
   statusCode: z.number(),
   data: z.array(TenantSchema),
 });
+
+/** PATCH /api/v2/tenants/:id — returns the updated tenant (see updateTenantStatus). */
+export const TenantResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: TenantSchema,
+});

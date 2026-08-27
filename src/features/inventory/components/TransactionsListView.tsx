@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TransactionsTable } from "./TransactionsTable";
+import { VariantPicker } from "./VariantPicker";
 import { useTransactions } from "../hooks/useTransactions";
-
-const inputClass =
-  "w-72 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
 
 const PAGE_SIZE = 20;
 
@@ -17,7 +15,12 @@ export function TransactionsListView() {
   const [variantId, setVariantId] = useState("");
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useTransactions({
+  const handleVariantChange = useCallback((id: string) => {
+    setVariantId(id);
+    setPage(1);
+  }, []);
+
+  const { data, isLoading, isError, error, refetch } = useTransactions({
     variantId: variantId.trim() || undefined,
     page,
     limit: PAGE_SIZE,
@@ -35,19 +38,14 @@ export function TransactionsListView() {
         </p>
       </div>
 
-      <input
-        value={variantId}
-        onChange={(e) => {
-          setVariantId(e.target.value);
-          setPage(1);
-        }}
-        placeholder="Filter by variant ID"
-        className={`mb-3.5 ${inputClass}`}
-      />
+      <VariantPicker variantId={variantId} onChange={handleVariantChange} />
 
       <TransactionsTable
         transactions={data?.items}
         isLoading={!mounted || isLoading}
+        isError={isError}
+        error={error}
+        onRetry={refetch}
         page={page}
         totalPages={data?.totalPages ?? 1}
         onPageChange={setPage}

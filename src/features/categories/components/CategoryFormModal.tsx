@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Dropdown } from "@/shared/components/Dropdown";
 import { Modal } from "@/shared/components/Modal";
+import { ConfirmBar } from "@/shared/components/ConfirmBar";
 import {
   useCreateCategory,
   useUpdateCategory,
@@ -141,27 +142,20 @@ export function CategoryFormModal({
       maxWidthClassName="max-w-[480px]"
       footer={
         confirmingDelete ? (
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4">
-            <p className="flex-1 text-[13px] font-semibold text-[var(--shop-danger)]">
-              Delete &quot;{category?.name}&quot;? This can&apos;t be undone.
-            </p>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              disabled={isPending}
-              className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--shop-text)] hover:bg-[var(--shop-bg)]"
-            >
-              Keep it
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmDelete}
-              disabled={isPending}
-              className="rounded-lg bg-[var(--shop-danger)] px-4 py-2.5 text-[13px] font-bold text-white hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {isDeleting ? "Deleting…" : "Delete permanently"}
-            </button>
-          </div>
+          <ConfirmBar
+            className="rounded-lg border border-[var(--shop-danger)]/30 bg-[var(--shop-danger-bg)] p-4"
+            message={
+              <>
+                Delete &quot;{category?.name}&quot;? This can&apos;t be undone.
+              </>
+            }
+            cancelLabel="Keep it"
+            confirmLabel="Delete permanently"
+            pendingLabel="Deleting…"
+            onCancel={() => setConfirmingDelete(false)}
+            onConfirm={handleConfirmDelete}
+            isPending={isPending}
+          />
         ) : (
           <div className="flex items-center gap-2.5">
             {isEdit && (

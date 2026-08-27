@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ORDER_STATUS_VALUES,
   type OrderStatus,
@@ -37,6 +37,19 @@ export function OrderStatusControl({
       ? FORWARD_STATUSES[0]
       : status,
   );
+  // Re-sync whenever the underlying order's status changes — either a
+  // successful mutation here, or (since this control isn't guaranteed a
+  // per-order `key` by its parent) the same component instance getting
+  // reused for a different order. Without this, a selection made for one
+  // order could linger and be submitted against another. Same re-sync
+  // pattern as Pagination's `jumpValue` tracking its `page` prop.
+  useEffect(() => {
+    setPending(
+      status === "CANCELLED" || status === "REFUNDED"
+        ? FORWARD_STATUSES[0]
+        : status,
+    );
+  }, [status]);
   const { mutate, isPending } = useUpdateOrderStatus(orderId);
   const style = STATUS_STYLES[status];
   // A cancelled or refunded order is terminal — there's no forward status

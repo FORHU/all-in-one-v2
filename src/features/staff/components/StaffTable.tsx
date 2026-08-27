@@ -5,10 +5,12 @@ import {
   AlertTriangle as AlertTriangleIcon,
   MoreHorizontal as MoreHorizontalIcon,
   RotateCw as RotateCwIcon,
+  UserPlus as UserPlusIcon,
 } from "lucide-react";
-import { notify } from "@/shared/lib/notify";
+import { Pagination } from "@/shared/components/Pagination";
 import { StaffStatsBar } from "./StaffStatsBar";
 import { StaffFilterBar } from "./StaffFilterBar";
+import { StaffAccountModal } from "./StaffAccountModal";
 import {
   ROLE_STYLES,
   STATUS_STYLES,
@@ -33,37 +35,65 @@ export type StaffAccount = {
   lastLoginAt: string | null;
 };
 
+export type StaffEditInput = { role: string; isActive: boolean };
+
 type StaffTableProps = {
+  /** Rendered inline with the stats/search/action buttons instead of its own stacked row — see ProductsTable's identically-named prop. */
+  heading?: { title: string };
   accounts: StaffAccount[] | undefined;
   isLoading: boolean;
   isError: boolean;
   error?: unknown;
   onRetry: () => void;
+  onInvite: () => void;
+  /** The signed-in admin's own id — disables Remove for their own row (mirrors the backend's self-removal guard). */
+  currentUserId?: string;
+  onSaveEdit: (id: string, data: StaffEditInput) => Promise<void>;
+  /** id of the account currently being saved, so the modal can disable + relabel its own button. */
+  savingId?: string | null;
+  onRemove: (id: string) => Promise<void>;
+  removingId?: string | null;
+  /** Backend-driven pagination over the fetched (staff+customer) page — see ProductsTable's identically-named props. */
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 };
 
+function toRow(a: StaffAccount) {
+  return {
+    id: a.id,
+    name: a.name,
+    email: a.email,
+    role: displayRole(a.role),
+    isActive: a.isActive,
+    status: a.isActive ? ("Active" as const) : ("Inactive" as const),
+    lastActive: formatLastActive(a.lastLoginAt),
+    account: a,
+  };
+}
+
 export function StaffTable({
+  heading,
   accounts,
   isLoading,
   isError,
   error,
   onRetry,
+  onInvite,
+  currentUserId,
+  onSaveEdit,
+  savingId,
+  onRemove,
+  removingId,
+  page,
+  totalPages,
+  onPageChange,
 }: StaffTableProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [openAccount, setOpenAccount] = useState<StaffAccount | null>(null);
 
-  const rows = useMemo(
-    () =>
-      (accounts ?? []).map((a) => ({
-        id: a.id,
-        name: a.name,
-        email: a.email,
-        role: displayRole(a.role),
-        status: a.isActive ? ("Active" as const) : ("Inactive" as const),
-        lastActive: formatLastActive(a.lastLoginAt),
-      })),
-    [accounts],
-  );
+  const rows = useMemo(() => (accounts ?? []).map(toRow), [accounts]);
 
   const filtered = useMemo(() => {
     return rows.filter((m) => {
@@ -80,19 +110,38 @@ export function StaffTable({
     });
   }, [rows, search, roleFilter]);
 
-  const notAvailable = (message: string) => {
-    notify.info(message);
-    setOpenMenu(null);
-  };
-
   return (
     <div>
-      <StaffStatsBar accounts={rows} isLoading={isLoading} />
+      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="mr-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+          {heading && (
+            <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
+              {heading.title}
+            </h2>
+          )}
+          <StaffStatsBar accounts={rows} isLoading={isLoading} />
+        </div>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search staff by name or email"
+          className="w-56 rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]"
+        />
+        <button
+          type="button"
+          onClick={onInvite}
+          className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[11.5px] font-bold uppercase tracking-wide text-white transition hover:brightness-90"
+          style={{ backgroundColor: "var(--shop-accent-dark)" }}
+        >
+          <UserPlusIcon className="h-3.5 w-3.5" strokeWidth={2.5} />
+          Invite staff
+        </button>
+      </div>
+
       <StaffFilterBar
-        search={search}
-        onSearchChange={setSearch}
         roleFilter={roleFilter}
         onRoleFilterChange={setRoleFilter}
+        resultsCount={filtered.length}
       />
 
       <div className="overflow-hidden rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)]">
@@ -150,6 +199,7 @@ export function StaffTable({
             const roleStyle = m.role ? ROLE_STYLES[m.role] : UNKNOWN_STYLE;
             const statusStyle =
               STATUS_STYLES[m.status.toLowerCase()] ?? UNKNOWN_STYLE;
+            const isSelf = m.id === currentUserId;
 
             return (
               <div
@@ -165,6 +215,11 @@ export function StaffTable({
                   </div>
                   <p className="truncate text-sm font-semibold text-[var(--shop-text)]">
                     {m.name}
+                    {isSelf && (
+                      <span className="ml-1.5 text-[11px] font-medium text-[var(--shop-text-muted)]">
+                        (you)
+                      </span>
+                    )}
                   </p>
                 </div>
                 <span className="truncate text-xs text-[var(--shop-text-muted)]">
@@ -192,58 +247,41 @@ export function StaffTable({
                 <span className="text-xs text-[var(--shop-text-muted)]">
                   {m.lastActive}
                 </span>
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={() =>
-                      notAvailable("Editing roles isn't wired up yet.")
-                    }
-                    className="text-xs font-semibold text-[var(--shop-accent)] hover:underline"
+                    onClick={() => setOpenAccount(m.account)}
+                    aria-label={`Manage ${m.name}`}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
                   >
-                    Edit role
+                    <MoreHorizontalIcon className="h-4 w-4" />
                   </button>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOpenMenu(openMenu === m.id ? null : m.id)
-                      }
-                      aria-label={`Actions for ${m.name}`}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--shop-text-muted)] hover:bg-[var(--shop-bg-soft)]"
-                    >
-                      <MoreHorizontalIcon className="h-4 w-4" />
-                    </button>
-                    {openMenu === m.id && (
-                      <div className="absolute right-0 top-8 z-10 w-[160px] rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] p-1.5 shadow-lg">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            notAvailable(
-                              "Resending invites isn't wired up yet.",
-                            )
-                          }
-                          className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]"
-                        >
-                          Resend invite
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            notAvailable("Removing staff isn't wired up yet.")
-                          }
-                          className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-danger)] hover:bg-[var(--shop-danger-bg)]"
-                        >
-                          Remove staff
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             );
           })
         )}
       </div>
+
+      {!isLoading && !isError && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+        />
+      )}
+
+      {openAccount && (
+        <StaffAccountModal
+          account={openAccount}
+          isSelf={openAccount.id === currentUserId}
+          onClose={() => setOpenAccount(null)}
+          onSave={onSaveEdit}
+          isSaving={savingId === openAccount.id}
+          onRemove={onRemove}
+          isRemoving={removingId === openAccount.id}
+        />
+      )}
     </div>
   );
 }

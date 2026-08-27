@@ -31,6 +31,9 @@ export type GetAdminProductsParams = {
   // Exact match, distinct from `search` — "only this brand" (e.g. a Brand
   // tile click), not a free-text guess.
   brand?: string;
+  // "unassigned" = products selling at raw supplier cost with no markup
+  // rule at all — the gap ProductRow's "No markup rule" badge flags.
+  pricingRule?: "assigned" | "unassigned";
 };
 
 /**
@@ -47,6 +50,7 @@ export const getAdminProducts = async (params: GetAdminProductsParams = {}) => {
   if (params.status) query.set("status", params.status);
   if (params.categoryId) query.set("categoryId", params.categoryId);
   if (params.brand) query.set("brand", params.brand);
+  if (params.pricingRule) query.set("pricingRule", params.pricingRule);
 
   const qs = query.toString();
   const raw = await fetcher<unknown>(

@@ -28,6 +28,9 @@ type ProductRowProps = {
   onToggleMenu: () => void;
   onQuickView: () => void;
   onEdit: () => void;
+  onDuplicate: () => void;
+  /** True while this row's own duplicate request is in flight — ProductsTable owns the create mutation, this just mirrors its pending state back onto the row that triggered it. */
+  isDuplicating?: boolean;
 };
 
 export function ProductRow({
@@ -38,6 +41,8 @@ export function ProductRow({
   onToggleMenu,
   onQuickView,
   onEdit,
+  onDuplicate,
+  isDuplicating = false,
 }: ProductRowProps) {
   const { mutate: archiveProduct, isPending: isArchiving } = useUpdateProduct(
     product.id,
@@ -155,6 +160,23 @@ export function ProductRow({
                 Cost {formatMoney(product.originalPrice)}
               </p>
             )}
+          {/* Has a real supplier cost basis but no pricing rule assigned —
+            selling at exact raw cost with zero margin, silently. Only shown
+            for imported/dropship products (originalPrice !== null); a
+            manually-priced product with no rule is the normal case, not a
+            gap. */}
+          {product.originalPrice !== null && product.pricingRule === null && (
+            <span
+              className="mt-1 inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+              style={{
+                background: "var(--shop-warning-bg)",
+                color: "var(--shop-warning)",
+              }}
+              title="Selling at raw supplier cost — no markup rule assigned. Assign one from Edit or Pricing Rules."
+            >
+              No markup rule
+            </span>
+          )}
         </div>
         <span
           className="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
@@ -217,9 +239,14 @@ export function ProductRow({
                 </button>
                 <button
                   role="menuitem"
-                  className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)]"
+                  onClick={() => {
+                    onDuplicate();
+                    onToggleMenu();
+                  }}
+                  disabled={isDuplicating}
+                  className="block w-full rounded-md px-2.5 py-2 text-left text-xs font-semibold text-[var(--shop-text)] hover:bg-[var(--shop-bg-soft)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Duplicate
+                  {isDuplicating ? "Duplicating…" : "Duplicate"}
                 </button>
                 <button
                   role="menuitem"

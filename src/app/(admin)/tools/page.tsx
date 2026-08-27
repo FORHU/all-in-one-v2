@@ -11,6 +11,7 @@ import {
   type SupplierOptionId,
 } from "@/features/product-sourcing/hooks/useProductSourcing";
 import { UNSELECTED_CATEGORY } from "@/features/product-sourcing/lib/presentation";
+import { useInvalidateProductsList } from "@/features/products/hooks/useProducts";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -85,6 +86,13 @@ export default function ToolsPage() {
   }, [selectedExternalId, detail?.categoryName, categoryOptions]);
 
   const importMutation = useImportProduct();
+  // product-sourcing can't invalidate products' cache directly (FAOS
+  // cross-feature boundary — see useProductSourcing.ts's useImportProduct),
+  // so this app-layer page, which already composes both features, does it
+  // after the import succeeds. Otherwise an already-open Products tab keeps
+  // showing the pre-import catalog until the global 60s staleTime lapses,
+  // despite the success toast implying the product is already there.
+  const invalidateProductsList = useInvalidateProductsList();
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
@@ -117,14 +125,17 @@ export default function ToolsPage() {
         isDetailLoading={isDetailLoading}
         isDetailError={isDetailError}
         onImport={(externalId) =>
-          importMutation.mutate({
-            supplierId,
-            externalId,
-            // Only reachable once the Import button is enabled, which
-            // requires categoryId to have moved off UNSELECTED_CATEGORY —
-            // "" is the admin's explicit "No category" choice at that point.
-            categoryId: categoryId === "" ? null : categoryId,
-          })
+          importMutation.mutate(
+            {
+              supplierId,
+              externalId,
+              // Only reachable once the Import button is enabled, which
+              // requires categoryId to have moved off UNSELECTED_CATEGORY —
+              // "" is the admin's explicit "No category" choice at that point.
+              categoryId: categoryId === "" ? null : categoryId,
+            },
+            { onSuccess: invalidateProductsList },
+          )
         }
         isImporting={importMutation.isPending}
         categoryOptions={categoryOptions}

@@ -18,6 +18,12 @@ const STATUS_DROPDOWN_OPTIONS: DropdownOption[] = [
 
 const ALL = "";
 
+const PRICING_RULE_DROPDOWN_OPTIONS: DropdownOption[] = [
+  { value: "all", label: "Any pricing" },
+  { value: "unassigned", label: "No markup rule" },
+  { value: "assigned", label: "Has markup rule" },
+];
+
 type FilterBarProps = {
   statusFilter: "all" | ProductStatus;
   onStatusFilterChange: (status: "all" | ProductStatus) => void;
@@ -25,6 +31,8 @@ type FilterBarProps = {
   onCategoryFilterChange: (categoryId: string) => void;
   brandFilter: string;
   onBrandFilterChange: (brand: string) => void;
+  pricingRuleFilter: "all" | "assigned" | "unassigned";
+  onPricingRuleFilterChange: (value: "all" | "assigned" | "unassigned") => void;
   resultsCount: number;
 };
 
@@ -35,6 +43,8 @@ export function FilterBar({
   onCategoryFilterChange,
   brandFilter,
   onBrandFilterChange,
+  pricingRuleFilter,
+  onPricingRuleFilterChange,
   resultsCount,
 }: FilterBarProps) {
   const { data: categoryOptions } = useCategoryOptions();
@@ -104,6 +114,16 @@ export function FilterBar({
           size="sm"
           className="w-[168px]"
           aria-label="Filter by brand"
+        />
+        <Dropdown
+          value={pricingRuleFilter}
+          options={PRICING_RULE_DROPDOWN_OPTIONS}
+          onChange={(v) =>
+            onPricingRuleFilterChange(v as "all" | "assigned" | "unassigned")
+          }
+          size="sm"
+          className="w-[150px]"
+          aria-label="Filter by pricing rule"
         />
       </div>
       <span className="text-xs text-[var(--shop-text-muted)]">

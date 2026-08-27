@@ -1,21 +1,53 @@
 "use client";
 
-import { UserPlus as UserPlusIcon } from "lucide-react";
-import { StaffTable } from "@/features/staff/components/StaffTable";
-import { useUsers } from "@/features/users/hooks/useUsers";
+import { useState } from "react";
+import {
+  StaffTable,
+  type StaffEditInput,
+} from "@/features/staff/components/StaffTable";
+import {
+  useUsers,
+  useUpdateUser,
+  useRemoveUser,
+} from "@/features/users/hooks/useUsers";
+import { useMe } from "@/features/auth/hooks/useAuth";
 import { notify } from "@/shared/lib/notify";
 
 // Staff & Roles only manages staff-tier accounts — plain "USER" accounts
 // (customers) come back from the same endpoint but don't belong here.
 const STAFF_ROLES = new Set(["ADMIN", "SUPER_ADMIN", "DEVELOPER"]);
 
+// GET /api/v2/users' `role` filter only accepts a single value, so there's no
+// one-call way to ask the backend for "any of ADMIN/SUPER_ADMIN/DEVELOPER" —
+// this page has to fetch the combined staff+customer roster and filter down
+// client-side. `limit` is clamped server-side to `maxLimit` in
+// all-in-one-v2-api/src/helpers/pagination.helper.ts (100, not the 200 this
+// page used to ask for — the old value silently under-fetched even before
+// hitting the truncation this fixes). Paginating on the backend's real
+// page/totalPages instead of a client-side cap means that once the combined
+// roster outgrows one page, admins get a working pager instead of staff
+// quietly disappearing.
+const PAGE_SIZE = 100;
+
 export default function StaffPage() {
-  // Staff accounts are a small, bounded, internal roster (unlike Customers,
-  // which can grow unbounded) — a high limit keeps this a single request
-  // instead of paginating an already-short list.
+  const [page, setPage] = useState(1);
   const { data, isLoading, isError, error, refetch } = useUsers({
-    limit: 200,
+    page,
+    limit: PAGE_SIZE,
   });
+  const { data: me } = useMe();
+  const updateUser = useUpdateUser();
+  const removeUser = useRemoveUser();
+
+  const handleSaveEdit = async (id: string, input: StaffEditInput) => {
+    await updateUser.mutateAsync({ id, data: input });
+    notify.success("Staff account updated.");
+  };
+
+  const handleRemove = async (id: string) => {
+    await removeUser.mutateAsync(id);
+    notify.success("Staff account removed.");
+  };
 
   const staffAccounts = data?.items
     .filter((u) => STAFF_ROLES.has(u.role))
@@ -30,31 +62,22 @@ export default function StaffPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="shop-display text-2xl font-bold uppercase tracking-tight text-[var(--shop-text)]">
-            Staff & Roles
-          </h2>
-          <p className="mt-1 text-sm text-[var(--shop-text-muted)]">
-            Manage admin, developer, and super-admin accounts across the
-            platform.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => notify.info("Inviting staff isn't wired up yet.")}
-          className="flex items-center gap-1.5 rounded-full bg-[var(--shop-accent-dark)] px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide text-white transition hover:brightness-90 active:scale-[0.99]"
-        >
-          <UserPlusIcon className="h-4 w-4" strokeWidth={2.5} />
-          Invite Staff
-        </button>
-      </div>
       <StaffTable
+        heading={{ title: "Staff & Roles" }}
         accounts={staffAccounts}
         isLoading={isLoading}
         isError={isError}
         error={error}
         onRetry={refetch}
+        onInvite={() => notify.info("Inviting staff isn't wired up yet.")}
+        currentUserId={me?.id}
+        onSaveEdit={handleSaveEdit}
+        savingId={updateUser.isPending ? updateUser.variables?.id : null}
+        onRemove={handleRemove}
+        removingId={removeUser.isPending ? removeUser.variables : null}
+        page={page}
+        totalPages={data?.totalPages ?? 1}
+        onPageChange={setPage}
       />
     </div>
   );

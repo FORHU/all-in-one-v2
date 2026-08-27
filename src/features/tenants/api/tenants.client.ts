@@ -1,6 +1,7 @@
 import { fetcher } from "@/shared/lib/http";
 import {
   TenantsResponseSchema,
+  TenantResponseSchema,
   type Tenant,
 } from "../contracts/tenants.contract";
 
@@ -18,4 +19,23 @@ import {
 export async function getTenants(): Promise<Tenant[]> {
   const raw = await fetcher<unknown>("/api/v2/tenants/all");
   return TenantsResponseSchema.parse(raw).data;
+}
+
+export type TenantStatus = "ACTIVE" | "SUSPENDED" | "INVITED";
+
+/**
+ * PATCH /api/v2/tenants/:id — admin-only (platform:manage). Narrow on
+ * purpose, mirroring users.client.ts's updateUser: the admin Tenants table
+ * only ever flips `status` (suspend/reactivate a store) from here, never
+ * name/domain/settings.
+ */
+export async function updateTenantStatus(
+  id: string,
+  status: TenantStatus,
+): Promise<Tenant> {
+  const raw = await fetcher<unknown>(`/api/v2/tenants/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+  return TenantResponseSchema.parse(raw).data;
 }

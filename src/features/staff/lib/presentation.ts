@@ -49,6 +49,28 @@ export function displayRole(apiRole: string): StaffRole | null {
   }
 }
 
+// Options for the edit-role Dropdown — same three values displayRole()
+// recognizes, in the order they should list (highest privilege first).
+// indicatorColor mirrors each role's badge color (ROLE_STYLES) so the
+// dropdown's dot matches the role chip shown everywhere else in the table.
+export const STAFF_ROLE_OPTIONS: {
+  value: string;
+  label: StaffRole;
+  indicatorColor: string;
+}[] = [
+  {
+    value: "SUPER_ADMIN",
+    label: "Super Admin",
+    indicatorColor: ROLE_STYLES["Super Admin"].color,
+  },
+  { value: "ADMIN", label: "Admin", indicatorColor: ROLE_STYLES.Admin.color },
+  {
+    value: "DEVELOPER",
+    label: "Developer",
+    indicatorColor: ROLE_STYLES.Developer.color,
+  },
+];
+
 export function initials(name: string): string {
   const words = name
     .trim()

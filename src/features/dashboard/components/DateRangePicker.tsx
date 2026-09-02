@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTimeField } from "@/shared/components/DateTimeField";
 import { lastNDaysRange, TODAY_ISO, type DateRange } from "../lib/date-range";
 
 const PRESETS = [
@@ -29,25 +30,29 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
         ))}
       </div>
       <div className="flex items-center gap-2 text-xs text-[var(--shop-text-muted)]">
-        <input
-          type="date"
+        <DateTimeField
+          mode="date"
+          clearable={false}
           value={value.startDate}
           max={value.endDate}
-          onChange={(e) =>
-            onChange({ startDate: e.target.value, endDate: value.endDate })
+          aria-label="Range start date"
+          className="w-40"
+          onChange={(startDate) =>
+            startDate && onChange({ startDate, endDate: value.endDate })
           }
-          className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2.5 py-1.5 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]"
         />
         <span>to</span>
-        <input
-          type="date"
+        <DateTimeField
+          mode="date"
+          clearable={false}
           value={value.endDate}
           min={value.startDate}
           max={TODAY_ISO}
-          onChange={(e) =>
-            onChange({ startDate: value.startDate, endDate: e.target.value })
+          aria-label="Range end date"
+          className="w-40"
+          onChange={(endDate) =>
+            endDate && onChange({ startDate: value.startDate, endDate })
           }
-          className="rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-2.5 py-1.5 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]"
         />
       </div>
     </div>

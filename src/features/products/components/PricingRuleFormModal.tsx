@@ -14,6 +14,7 @@ import type {
 } from "../api/pricing-rules.client";
 import { Modal } from "@/shared/components/Modal";
 import { ConfirmBar } from "@/shared/components/ConfirmBar";
+import { DateTimeField } from "@/shared/components/DateTimeField";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--shop-border)] bg-[var(--shop-surface)] px-3 py-2 text-xs text-[var(--shop-text)] outline-none focus:border-[var(--shop-accent)]";
@@ -49,18 +50,6 @@ function isBlankOrValidNumber(value: string): boolean {
   return Number.isFinite(Number(value));
 }
 
-/** ISO string -> `datetime-local` input value, in the browser's local time. */
-function toDatetimeLocalValue(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** `datetime-local` input value (no timezone, browser-local) -> ISO string. */
-function fromDatetimeLocalValue(value: string): string {
-  return new Date(value).toISOString();
-}
-
 export function PricingRuleFormModal({
   rule,
   onClose,
@@ -81,12 +70,9 @@ export function PricingRuleFormModal({
   const [saleValue, setSaleValue] = useState(
     rule?.sale?.value.toString() ?? "",
   );
-  const [saleStartsAt, setSaleStartsAt] = useState(
-    rule?.sale ? toDatetimeLocalValue(rule.sale.startsAt) : "",
-  );
-  const [saleEndsAt, setSaleEndsAt] = useState(
-    rule?.sale ? toDatetimeLocalValue(rule.sale.endsAt) : "",
-  );
+  // ISO strings (or "" when unset) — DateTimeField reads/writes ISO directly.
+  const [saleStartsAt, setSaleStartsAt] = useState(rule?.sale?.startsAt ?? "");
+  const [saleEndsAt, setSaleEndsAt] = useState(rule?.sale?.endsAt ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Folds the grid's separate "Set as default & apply to all" button into
@@ -133,10 +119,8 @@ export function PricingRuleFormModal({
     (saleEnabled &&
       (saleType !== (rule?.sale?.type ?? "PERCENTAGE") ||
         saleValue !== (rule?.sale?.value.toString() ?? "") ||
-        saleStartsAt !==
-          (rule?.sale ? toDatetimeLocalValue(rule.sale.startsAt) : "") ||
-        saleEndsAt !==
-          (rule?.sale ? toDatetimeLocalValue(rule.sale.endsAt) : "")));
+        saleStartsAt !== (rule?.sale?.startsAt ?? "") ||
+        saleEndsAt !== (rule?.sale?.endsAt ?? "")));
 
   const dirty =
     !isEdit ||
@@ -152,8 +136,8 @@ export function PricingRuleFormModal({
         ? {
             type: saleType,
             value: Number(saleValue) || 0,
-            startsAt: fromDatetimeLocalValue(saleStartsAt),
-            endsAt: fromDatetimeLocalValue(saleEndsAt),
+            startsAt: saleStartsAt,
+            endsAt: saleEndsAt,
           }
         : null;
 
@@ -399,22 +383,24 @@ export function PricingRuleFormModal({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className={labelClass}>Starts</label>
-                  <input
-                    type="datetime-local"
+                  <DateTimeField
                     value={saleStartsAt}
-                    onChange={(e) => setSaleStartsAt(e.target.value)}
+                    onChange={setSaleStartsAt}
+                    max={saleEndsAt || undefined}
                     disabled={isPending}
-                    className={inputClass}
+                    placeholder="Pick a start"
+                    aria-label="Sale start date and time"
                   />
                 </div>
                 <div>
                   <label className={labelClass}>Ends</label>
-                  <input
-                    type="datetime-local"
+                  <DateTimeField
                     value={saleEndsAt}
-                    onChange={(e) => setSaleEndsAt(e.target.value)}
+                    onChange={setSaleEndsAt}
+                    min={saleStartsAt || undefined}
                     disabled={isPending}
-                    className={inputClass}
+                    placeholder="Pick an end"
+                    aria-label="Sale end date and time"
                   />
                 </div>
               </div>

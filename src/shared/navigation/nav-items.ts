@@ -82,6 +82,7 @@ export const STORE_NAV_ITEMS: NavItem[] = [
     icon: MegaphoneIcon,
     children: [
       { label: "Campaigns", href: "/marketing" },
+      { label: "Promotions", href: "/marketing/promotions" },
       { label: "Social Accounts", href: "/marketing/social-accounts" },
       { label: "AI Content", href: "/marketing/ai-content" },
     ],

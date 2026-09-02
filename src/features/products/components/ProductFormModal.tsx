@@ -700,6 +700,12 @@ export function ProductFormModal({
             disabled={isPending}
             className={inputClass}
           />
+          <p className="mt-1.5 text-[11px] text-[var(--shop-text-muted)]">
+            Manual override — ignores the pricing rule. When set, this exact
+            price is shown and the rule&apos;s markup / scheduled sale no longer
+            drive the displayed price. Clear it to hand control back to the
+            rule.
+          </p>
           {!salePriceValid && (
             <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
               Enter a valid number.
@@ -717,6 +723,10 @@ export function ProductFormModal({
             disabled={isPending}
             className={inputClass}
           />
+          <p className="mt-1.5 text-[11px] text-[var(--shop-text-muted)]">
+            Manual &quot;was&quot; price, shown struck through. Independent of
+            the pricing rule.
+          </p>
           {!compareAtPriceValid && (
             <p className="mt-1 text-[11px] text-[var(--shop-danger)]">
               Enter a valid number.

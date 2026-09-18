@@ -7,7 +7,13 @@
 export const featureManifest = {
   name: "staff",
   dependsOn: [] as const,
-  exposes: ["StaffTable"] as const,
+  exposes: [
+    "StaffAccountModal",
+    "ROLE_STYLES",
+    "STATUS_STYLES",
+    "displayRole",
+    "STAFF_ROLE_OPTIONS",
+  ] as const,
 } as const;
 
 export type StaffManifest = typeof featureManifest;

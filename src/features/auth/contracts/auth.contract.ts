@@ -96,6 +96,13 @@ export const AuthMeSchema = z.object({
     .object({ fileUrl: z.string().nullable().optional() })
     .nullable()
     .optional(),
+  // Present only when the request carried a resolved tenant (x-tenant-slug/
+  // host) — null when the caller has no membership in that store, absent
+  // entirely for requests made with no tenant context (e.g. Platform scope).
+  tenantMembership: z
+    .object({ role: z.string(), status: z.string() })
+    .nullable()
+    .optional(),
 });
 
 export const AuthMeResponseSchema = z.object({

@@ -4,8 +4,11 @@ import { useState } from "react";
 import { Modal } from "@/shared/components/Modal";
 import { Dropdown } from "@/shared/components/Dropdown";
 import { ConfirmBar } from "@/shared/components/ConfirmBar";
-import { STAFF_ROLE_OPTIONS } from "../lib/presentation";
-import type { StaffAccount, StaffEditInput } from "./StaffTable";
+import {
+  STAFF_ROLE_OPTIONS,
+  type StaffAccount,
+  type StaffEditInput,
+} from "../lib/presentation";
 
 const labelClass =
   "mb-1.5 block text-[10.5px] font-bold uppercase tracking-wide text-[var(--shop-text-muted)]";

@@ -1,84 +1,213 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  StaffTable,
-  type StaffEditInput,
-} from "@/features/staff/components/StaffTable";
+  UnifiedStaffTable,
+  type UnifiedStaffRow,
+} from "@/shared/components/UnifiedStaffTable";
+import { StaffAccountModal } from "@/features/staff/components/StaffAccountModal";
+import {
+  ROLE_STYLES as PLATFORM_ROLE_STYLES,
+  STATUS_STYLES as PLATFORM_STATUS_STYLES,
+  UNKNOWN_STYLE,
+  displayRole as displayPlatformRole,
+  formatLastActive,
+} from "@/features/staff/lib/presentation";
+import {
+  ROLE_STYLES as TENANT_ROLE_STYLES,
+  MEMBERSHIP_STATUS_STYLES,
+  displayRole as displayTenantRole,
+} from "@/features/tenant-staff/lib/presentation";
+import { EditMembershipModal } from "@/features/tenant-staff/components/EditMembershipModal";
+import { GrantMembershipModal } from "@/features/tenant-staff/components/GrantMembershipModal";
 import {
   useUsers,
   useUpdateUser,
   useRemoveUser,
 } from "@/features/users/hooks/useUsers";
+import { useTenants } from "@/features/tenants/hooks/useTenants";
+import {
+  useAllTenantMemberships,
+  useGrantMembership,
+  useUpdateMembershipRole,
+  useRemoveMembership,
+} from "@/features/tenant-staff/hooks/useTenantStaff";
 import { useMe } from "@/features/auth/hooks/useAuth";
 import { notify } from "@/shared/lib/notify";
 
-// Staff & Roles only manages staff-tier accounts — plain "USER" accounts
-// (customers) come back from the same endpoint but don't belong here.
-const STAFF_ROLES = new Set(["ADMIN", "SUPER_ADMIN", "DEVELOPER"]);
+// This platform-wide page only ever shows genuinely platform-level accounts.
+// "ADMIN" is intentionally absent — the backend's UserRole enum no longer has
+// that value at all; per-store ADMIN access is a TenantMembership row now
+// (the "tenant" rows below), not a platform role.
+const PLATFORM_STAFF_ROLES = new Set(["SUPER_ADMIN", "DEVELOPER"]);
 
-// GET /api/v2/users' `role` filter only accepts a single value, so there's no
-// one-call way to ask the backend for "any of ADMIN/SUPER_ADMIN/DEVELOPER" —
-// this page has to fetch the combined staff+customer roster and filter down
-// client-side. `limit` is clamped server-side to `maxLimit` in
-// all-in-one-v2-api/src/helpers/pagination.helper.ts (100, not the 200 this
-// page used to ask for — the old value silently under-fetched even before
-// hitting the truncation this fixes). Paginating on the backend's real
-// page/totalPages instead of a client-side cap means that once the combined
-// roster outgrows one page, admins get a working pager instead of staff
-// quietly disappearing.
+const PLATFORM_TENANT_BADGE = {
+  label: "Platform",
+  bg: "var(--shop-neutral-bg)",
+  color: "var(--shop-neutral)",
+};
+
 const PAGE_SIZE = 100;
 
+function platformRoleBadge(apiRole: string) {
+  const label = displayPlatformRole(apiRole);
+  return {
+    label: label ?? apiRole,
+    ...(label ? PLATFORM_ROLE_STYLES[label] : UNKNOWN_STYLE),
+  };
+}
+
 export default function StaffPage() {
-  const [page, setPage] = useState(1);
-  const { data, isLoading, isError, error, refetch } = useUsers({
-    page,
-    limit: PAGE_SIZE,
-  });
   const { data: me } = useMe();
+  const {
+    data: usersPage,
+    isLoading: usersLoading,
+    isError: usersError,
+    error: usersErrorObj,
+    refetch: refetchUsers,
+  } = useUsers({ page: 1, limit: PAGE_SIZE });
+  const { data: tenants } = useTenants();
+  const {
+    data: memberships,
+    isLoading: membershipsLoading,
+    isError: membershipsError,
+    error: membershipsErrorObj,
+    refetch: refetchMemberships,
+  } = useAllTenantMemberships();
+
   const updateUser = useUpdateUser();
   const removeUser = useRemoveUser();
+  const grant = useGrantMembership();
+  const updateRole = useUpdateMembershipRole();
+  const removeMembership = useRemoveMembership();
 
-  const handleSaveEdit = async (id: string, input: StaffEditInput) => {
-    await updateUser.mutateAsync({ id, data: input });
-    notify.success("Staff account updated.");
-  };
+  const [granting, setGranting] = useState(false);
+  const [openRow, setOpenRow] = useState<{
+    id: string;
+    kind: "platform" | "tenant";
+  } | null>(null);
 
-  const handleRemove = async (id: string) => {
-    await removeUser.mutateAsync(id);
-    notify.success("Staff account removed.");
-  };
+  const rows: UnifiedStaffRow[] = useMemo(() => {
+    const platformRows: UnifiedStaffRow[] = (usersPage?.items ?? [])
+      .filter((u) => PLATFORM_STAFF_ROLES.has(u.role))
+      .map((u) => ({
+        id: u.id,
+        kind: "platform" as const,
+        name: u.name ?? u.username,
+        email: u.email,
+        roleBadge: platformRoleBadge(u.role),
+        tenantBadge: PLATFORM_TENANT_BADGE,
+        statusBadge: {
+          label: u.isActive ? "Active" : "Inactive",
+          ...(PLATFORM_STATUS_STYLES[u.isActive ? "active" : "inactive"] ??
+            UNKNOWN_STYLE),
+        },
+        lastActive: formatLastActive(u.lastLoginAt),
+        isSelf: u.id === me?.id,
+      }));
 
-  const staffAccounts = data?.items
-    .filter((u) => STAFF_ROLES.has(u.role))
-    .map((u) => ({
-      id: u.id,
-      name: u.name ?? u.username,
-      email: u.email,
-      role: u.role,
-      isActive: u.isActive,
-      lastLoginAt: u.lastLoginAt,
+    const tenantRows: UnifiedStaffRow[] = (memberships ?? []).map((m) => ({
+      id: m.id,
+      kind: "tenant" as const,
+      name: m.user.name ?? m.user.username,
+      email: m.user.email,
+      roleBadge: {
+        label: displayTenantRole(m.role),
+        ...(TENANT_ROLE_STYLES[m.role] ?? UNKNOWN_STYLE),
+      },
+      tenantBadge: {
+        label: m.tenant?.name ?? "Unknown store",
+        bg: "var(--shop-neutral-bg)",
+        color: "var(--shop-neutral)",
+      },
+      statusBadge: {
+        label: m.status.charAt(0) + m.status.slice(1).toLowerCase(),
+        ...(MEMBERSHIP_STATUS_STYLES[m.status.toLowerCase()] ?? UNKNOWN_STYLE),
+      },
+      lastActive: "—",
+      isSelf: m.userId === me?.id,
     }));
+
+    return [...platformRows, ...tenantRows];
+  }, [usersPage, memberships, me]);
+
+  const openPlatformAccount = usersPage?.items.find(
+    (u) => u.id === openRow?.id,
+  );
+  const openMembership = memberships?.find((m) => m.id === openRow?.id);
+
+  const tenantOptions = useMemo(
+    () => (tenants ?? []).map((t) => ({ value: t.id, label: t.name })),
+    [tenants],
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-      <StaffTable
-        heading={{ title: "Staff & Roles" }}
-        accounts={staffAccounts}
-        isLoading={isLoading}
-        isError={isError}
-        error={error}
-        onRetry={refetch}
+      <UnifiedStaffTable
+        rows={rows}
+        isLoading={usersLoading || membershipsLoading}
+        isError={usersError || membershipsError}
+        error={usersErrorObj ?? membershipsErrorObj}
+        onRetry={() => {
+          refetchUsers();
+          refetchMemberships();
+        }}
+        onManageRow={(id, kind) => setOpenRow({ id, kind })}
+        onGrant={() => setGranting(true)}
         onInvite={() => notify.info("Inviting staff isn't wired up yet.")}
-        currentUserId={me?.id}
-        onSaveEdit={handleSaveEdit}
-        savingId={updateUser.isPending ? updateUser.variables?.id : null}
-        onRemove={handleRemove}
-        removingId={removeUser.isPending ? removeUser.variables : null}
-        page={page}
-        totalPages={data?.totalPages ?? 1}
-        onPageChange={setPage}
       />
+
+      {granting && (
+        <GrantMembershipModal
+          actingRole="OWNER"
+          tenantOptions={tenantOptions}
+          onClose={() => setGranting(false)}
+          onGrant={(input) => grant.mutateAsync(input).then(() => undefined)}
+          isGranting={grant.isPending}
+        />
+      )}
+
+      {openRow?.kind === "platform" && openPlatformAccount && (
+        <StaffAccountModal
+          account={{
+            id: openPlatformAccount.id,
+            name: openPlatformAccount.name ?? openPlatformAccount.username,
+            email: openPlatformAccount.email,
+            role: openPlatformAccount.role,
+            isActive: openPlatformAccount.isActive,
+            lastLoginAt: openPlatformAccount.lastLoginAt,
+          }}
+          isSelf={openPlatformAccount.id === me?.id}
+          onClose={() => setOpenRow(null)}
+          onSave={async (id, data) => {
+            await updateUser.mutateAsync({ id, data });
+            notify.success("Staff account updated.");
+          }}
+          isSaving={updateUser.isPending}
+          onRemove={async (id) => {
+            await removeUser.mutateAsync(id);
+            notify.success("Staff account removed.");
+          }}
+          isRemoving={removeUser.isPending}
+        />
+      )}
+
+      {openRow?.kind === "tenant" && openMembership && (
+        <EditMembershipModal
+          membership={openMembership}
+          actingRole="OWNER"
+          isSelf={openMembership.userId === me?.id}
+          onClose={() => setOpenRow(null)}
+          onSave={(id, role) =>
+            updateRole.mutateAsync({ id, role }).then(() => undefined)
+          }
+          isSaving={updateRole.isPending}
+          onRemove={(id) =>
+            removeMembership.mutateAsync(id).then(() => undefined)
+          }
+          isRemoving={removeMembership.isPending}
+        />
+      )}
     </div>
   );
 }

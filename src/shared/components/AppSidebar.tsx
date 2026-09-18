@@ -38,6 +38,10 @@ type AppSidebarProps = {
   selectedTenantSlug?: string | null;
   onTenantChange?: (slug: string) => void;
   isTenantsLoading?: boolean;
+  /** Computed by AdminLayout from the signed-in user's role — this component never derives it itself. */
+  isPlatformScope: boolean;
+  /** false for a non-platform-admin: they're locked to their own store, so the switcher renders as a plain label instead of a dropdown, and "Platform (All Stores)" is never offered. */
+  canSwitchTenant: boolean;
 };
 
 function isNavItemActive(pathname: string, href: string) {
@@ -83,6 +87,8 @@ export function AppSidebar({
   selectedTenantSlug,
   onTenantChange,
   isTenantsLoading,
+  isPlatformScope,
+  canSwitchTenant,
 }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -122,10 +128,6 @@ export function AppSidebar({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // `selectedTenantSlug` reads localStorage, which the server always sees
-  // as unset — before mount, render as Platform scope (the server's view)
-  // so the first client paint matches and avoids a hydration mismatch.
-  const isPlatformScope = !mounted || !selectedTenantSlug;
   const navItems = getNavItems(isPlatformScope);
   const selectedTenant = tenants?.find((t) => t.slug === selectedTenantSlug);
   const currentTenantLabel = isPlatformScope
@@ -231,7 +233,26 @@ export function AppSidebar({
         <div className="relative border-b border-white/10 px-3 py-3">
           {mounted && isTenantsLoading ? (
             <div className="h-11 animate-pulse rounded-md bg-white/5" />
-          ) : mounted && tenants && tenants.length > 0 ? (
+          ) : mounted && !canSwitchTenant && selectedTenant ? (
+            // Locked to a single store — no dropdown, no chevron, no way to
+            // reach another store or Platform scope from here.
+            <div className="flex w-full items-center gap-2.5 rounded-md bg-white/5 px-2.5 py-2">
+              <div
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-bold text-white"
+                style={{ background: currentChipColor }}
+              >
+                {initials(selectedTenant.name)}
+              </div>
+              <div className="min-w-0 flex-1 leading-tight">
+                <p className="truncate text-xs font-semibold text-[var(--shop-band-text)]">
+                  {currentTenantLabel}
+                </p>
+                <p className="truncate text-[10px] font-medium uppercase tracking-wide text-[var(--shop-band-text-muted)]">
+                  Store scope
+                </p>
+              </div>
+            </div>
+          ) : mounted && canSwitchTenant && tenants && tenants.length > 0 ? (
             <>
               {tenantMenuOpen && (
                 <button

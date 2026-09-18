@@ -18,6 +18,8 @@ type AppShellProps = {
   selectedTenantSlug?: string | null;
   onTenantChange?: (slug: string) => void;
   isTenantsLoading?: boolean;
+  isPlatformScope: boolean;
+  canSwitchTenant: boolean;
 };
 
 export function AppShell({
@@ -30,6 +32,8 @@ export function AppShell({
   selectedTenantSlug,
   onTenantChange,
   isTenantsLoading,
+  isPlatformScope,
+  canSwitchTenant,
 }: AppShellProps) {
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
 
@@ -43,6 +47,8 @@ export function AppShell({
         selectedTenantSlug={selectedTenantSlug}
         onTenantChange={onTenantChange}
         isTenantsLoading={isTenantsLoading}
+        isPlatformScope={isPlatformScope}
+        canSwitchTenant={canSwitchTenant}
       />
 
       {/* overflow-hidden here (not just on <main>) so this column's height

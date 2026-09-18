@@ -1,3 +1,19 @@
+// Structurally matches features/users' `User` type (role as the backend's
+// raw string) without importing it — features/staff can't depend on
+// features/users directly (FAOS boundary), so the app layer fetches real
+// accounts, filters to staff-tier roles, and passes them in as this
+// locally-owned shape instead.
+export type StaffAccount = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  lastLoginAt: string | null;
+};
+
+export type StaffEditInput = { role: string; isActive: boolean };
+
 // Display-only label for a staff-tier account, derived from the backend's
 // role enum via displayRole() below — not sourced from any mock/fixture data.
 export type StaffRole = "Super Admin" | "Admin" | "Developer";

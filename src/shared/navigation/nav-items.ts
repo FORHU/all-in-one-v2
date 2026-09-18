@@ -99,6 +99,7 @@ export const STORE_NAV_ITEMS: NavItem[] = [
     ],
   },
   { label: "Integrations", href: "/integrations", icon: PlugIcon },
+  { label: "Team", href: "/team", icon: UserCogIcon },
   { label: "Settings", href: "/settings", icon: SettingsIcon },
   { label: "Activity Logs", href: "/activity-logs", icon: ScrollTextIcon },
 ];

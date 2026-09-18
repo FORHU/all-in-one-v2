@@ -85,14 +85,24 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshPromise;
 }
 
+type FetcherOptions = RequestInit & {
+  /**
+   * Skips sending `x-tenant-slug` even if one is set in localStorage. Used
+   * by calls whose whole job is to discover the *correct* tenant (e.g.
+   * "which stores do I belong to") — those must never be blocked by a
+   * stale or foreign tenant slug left over from a previous session/user.
+   */
+  skipTenantHeader?: boolean;
+};
+
 export async function fetcher<T>(
   url: string,
-  options?: RequestInit,
+  options?: FetcherOptions,
   isRetry = false,
 ): Promise<T> {
   try {
     const token = getToken();
-    const tenantSlug = getTenantSlug();
+    const tenantSlug = options?.skipTenantHeader ? null : getTenantSlug();
     const res = await fetch(`${env.NEXT_PUBLIC_API_URL}${url}`, {
       ...options,
       headers: {

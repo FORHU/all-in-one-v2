@@ -4,6 +4,7 @@ import {
   OrderDetailResponseSchema,
   SupplierOrdersResponseSchema,
   ShipmentResponseSchema,
+  PlaceWithSupplierResponseSchema,
   type OrderStatus,
   type OrderDetail,
   type SupplierOrder,
@@ -61,6 +62,23 @@ export const cancelOrder = async (id: string): Promise<OrderDetail> => {
   return OrderDetailResponseSchema.parse(raw).data;
 };
 
+/**
+ * POST /api/v2/orders/:id/reject — declines to fulfill a paid order and
+ * issues a full refund. Only allowed while the order is PROCESSING and
+ * hasn't already been placed with a supplier — see
+ * OrderService.rejectOrder's doc comment.
+ */
+export const rejectOrder = async (
+  id: string,
+  reason?: string,
+): Promise<OrderDetail> => {
+  const raw = await fetcher<unknown>(`/api/v2/orders/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+  return OrderDetailResponseSchema.parse(raw).data;
+};
+
 /** GET /api/v2/orders/:id/supplier-orders — the supplier-side fulfillments backing this order. */
 export const getSupplierOrders = async (
   orderId: string,
@@ -86,4 +104,22 @@ export const updateShipment = async (
     body: JSON.stringify(input),
   });
   return ShipmentResponseSchema.parse(raw).data;
+};
+
+/**
+ * POST /api/v2/orders/:id/place-with-supplier — actually places (and pays
+ * for) this order with its supplier, e.g. CJ Dropshipping. Real, non-test
+ * money on the supplier's side once this succeeds — see
+ * CJOrderFulfillmentService.placeOrder's doc comment. Deliberately
+ * CJ-only/all-or-nothing for now: the backend 422s if any line item isn't
+ * sourced from a supplier this can place with.
+ */
+export const placeOrderWithSupplier = async (
+  orderId: string,
+): Promise<SupplierOrder> => {
+  const raw = await fetcher<unknown>(
+    `/api/v2/orders/${orderId}/place-with-supplier`,
+    { method: "POST" },
+  );
+  return PlaceWithSupplierResponseSchema.parse(raw).data;
 };

@@ -17,6 +17,7 @@ export const OrderSchema = z.object({
     "FULFILLED",
     "CANCELLED",
     "REFUNDED",
+    "REJECTED",
   ]),
   subtotal: z.string(),
   discountAmount: z.string(),
@@ -148,6 +149,7 @@ export const PaymentStatusSchema = z.enum([
   "PENDING",
   "PROCESSING",
   "WAITING_CONFIRMATION",
+  "AUTHORIZED",
   "PAID",
   "FAILED",
   "CANCELLED",
@@ -195,6 +197,13 @@ export const ShipmentResponseSchema = z.object({
   status: z.string(),
   statusCode: z.number(),
   data: ShipmentSchema,
+});
+
+/** POST /api/v2/orders/:id/place-with-supplier — same shape as one entry in SupplierOrdersResponseSchema. */
+export const PlaceWithSupplierResponseSchema = z.object({
+  status: z.string(),
+  statusCode: z.number(),
+  data: SupplierOrderSchema,
 });
 
 export type OrderDetail = z.infer<typeof OrderDetailSchema>;

@@ -7,6 +7,8 @@ import { ApiError } from "@/shared/errors/api-error";
 import { useOrder, useSupplierOrders } from "../hooks/useOrderDetail";
 import { OrderStatusControl } from "./OrderStatusControl";
 import { CancelOrderButton } from "./CancelOrderButton";
+import { PlaceWithSupplierButton } from "./PlaceWithSupplierButton";
+import { RejectOrderButton } from "./RejectOrderButton";
 import { ShipmentStatusEditor } from "./ShipmentStatusEditor";
 import {
   formatOrderDate,
@@ -98,14 +100,30 @@ export function OrderDetailView({ orderId }: { orderId: string }) {
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
             <OrderStatusControl orderId={order.id} status={order.status} />
-            {order.status !== "CANCELLED" && order.status !== "REFUNDED" && (
-              <CancelOrderButton
-                orderId={order.id}
-                hasCapturedPayment={order.payments.some(
-                  (p) => p.status === "PAID",
-                )}
-              />
-            )}
+            {/* PROCESSING = paid but not yet fulfilled — the two live
+                options at this point are place it (PlaceWithSupplierButton)
+                or decline it (RejectOrderButton, full refund). Placing
+                before payment would charge the real CJ balance for an
+                order that might still be cancelled/declined; any later
+                status already has a supplier order (or never will), so
+                neither action applies anymore. */}
+            {order.status === "PROCESSING" &&
+              (!supplierOrders || supplierOrders.length === 0) && (
+                <>
+                  <PlaceWithSupplierButton orderId={order.id} />
+                  <RejectOrderButton orderId={order.id} />
+                </>
+              )}
+            {order.status !== "CANCELLED" &&
+              order.status !== "REFUNDED" &&
+              order.status !== "REJECTED" && (
+                <CancelOrderButton
+                  orderId={order.id}
+                  hasCapturedPayment={order.payments.some(
+                    (p) => p.status === "PAID",
+                  )}
+                />
+              )}
           </div>
         </div>
       </div>

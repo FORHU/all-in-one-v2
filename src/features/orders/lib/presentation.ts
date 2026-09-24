@@ -34,6 +34,7 @@ export const STATUS_STYLES: Record<OrderStatus, StatusStyle> = {
   FULFILLED: success,
   CANCELLED: danger,
   REFUNDED: neutral,
+  REJECTED: danger,
 };
 
 export const SHIPMENT_STATUS_STYLES: Record<ShipmentStatus, StatusStyle> = {
@@ -81,6 +82,7 @@ export const PAYMENT_STATUS_STYLES: Record<PaymentStatus, StatusStyle> = {
   PENDING: neutral,
   PROCESSING: warning,
   WAITING_CONFIRMATION: warning,
+  AUTHORIZED: warning,
   PAID: success,
   FAILED: danger,
   CANCELLED: danger,

@@ -6,8 +6,10 @@ import {
   getOrder,
   updateOrderStatus,
   cancelOrder,
+  rejectOrder,
   getSupplierOrders,
   updateShipment,
+  placeOrderWithSupplier,
   type UpdateShipmentInput,
 } from "../api/orders.client";
 import { ordersKeys } from "../api/orders.keys";
@@ -56,6 +58,24 @@ export function useCancelOrder(orderId: string) {
 }
 
 /**
+ * Declines to fulfill a paid order and issues a full refund in the same
+ * action — only valid while the order is PROCESSING and hasn't already
+ * been placed with a supplier (the backend 409s otherwise). Unlike
+ * useCancelOrder, this always involves real money moving.
+ */
+export function useRejectOrder(orderId: string) {
+  const queryClient = useQueryClient();
+  return useSafeMutation({
+    mutationFn: (reason?: string) => rejectOrder(orderId, reason),
+    onSuccess: (order) => {
+      queryClient.setQueryData(ordersKeys.detail(orderId), order);
+      queryClient.invalidateQueries({ queryKey: ordersKeys.lists() });
+      notify.success(`Order ${order.orderNumber} rejected and refunded.`);
+    },
+  });
+}
+
+/**
  * Lets a sibling composed alongside OrderDetailView on the order detail page
  * (the Returns panel, a different feature) ask this order's cache to
  * refresh after an action that might have changed it — e.g. a refund that
@@ -75,6 +95,32 @@ export function useSupplierOrders(orderId: string) {
     queryKey: ordersKeys.supplierOrders(orderId),
     queryFn: () => getSupplierOrders(orderId),
     enabled: Boolean(orderId),
+  });
+}
+
+/**
+ * Places (and pays for) this order with its supplier — real money moves on
+ * the supplier's side once this succeeds. The response is just the new
+ * CommerceSupplierOrder, not the full order, so — unlike useCancelOrder —
+ * this can't hand-patch the detail cache directly; it invalidates the
+ * order detail (status flips PENDING -> PROCESSING server-side), the
+ * standalone supplier-orders query OrderDetailView actually renders from,
+ * and the list (so its status badge updates too).
+ */
+export function usePlaceWithSupplier(orderId: string) {
+  const queryClient = useQueryClient();
+  return useSafeMutation({
+    mutationFn: () => placeOrderWithSupplier(orderId),
+    onSuccess: (supplierOrder) => {
+      queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) });
+      queryClient.invalidateQueries({
+        queryKey: ordersKeys.supplierOrders(orderId),
+      });
+      queryClient.invalidateQueries({ queryKey: ordersKeys.lists() });
+      notify.success(
+        `Order placed with ${supplierOrder.supplier.displayName}.`,
+      );
+    },
   });
 }
 

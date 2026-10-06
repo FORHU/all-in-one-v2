@@ -38,12 +38,13 @@ export function ReturnsTable({
   return (
     <div>
       <div className="overflow-hidden rounded-xl border border-[var(--shop-border)] bg-[var(--shop-surface)]">
-        <div className="grid grid-cols-[1fr_1.2fr_1.2fr_2fr_1fr] items-center gap-3 border-b border-white/10 bg-[var(--shop-ink)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-band-text-muted)]">
+        <div className="grid grid-cols-[1fr_1.2fr_1.2fr_2fr_1fr_0.6fr] items-center gap-3 border-b border-white/10 bg-[var(--shop-ink)] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-[var(--shop-band-text-muted)]">
           <span>Order</span>
           <span>Customer</span>
           <span>Reason</span>
           <span>Status &amp; actions</span>
           <span>Requested</span>
+          <span />
         </div>
 
         {isLoading ? (
@@ -90,12 +91,13 @@ export function ReturnsTable({
           rows.map((r) => (
             <div
               key={r.id}
-              className="grid grid-cols-[1fr_1.2fr_1.2fr_2fr_1fr] items-center gap-3 border-b border-[var(--shop-border)] px-[18px] py-3.5 last:border-b-0"
+              className="grid grid-cols-[1fr_1.2fr_1.2fr_2fr_1fr_0.6fr] items-center gap-3 border-b border-[var(--shop-border)] px-[18px] py-3.5 last:border-b-0"
             >
-              {/* No dedicated return-detail page — the parent order's detail
-                  view has the full order + payments context, and now also
-                  has these same actions embedded, so it's still the one
-                  place to go for more. */}
+              {/* The parent order's detail view still has the legacy
+                  PENDING-only approve/reject/refund row embedded (for
+                  returns started by an admin on a customer's behalf) — the
+                  "View" link on the right is this row's own request detail
+                  page, for the richer evidence/CJ-dispute/history flow. */}
               <Link
                 href={`/orders/${r.order.id}`}
                 className="truncate text-sm font-semibold text-[var(--shop-text)] hover:underline"
@@ -116,10 +118,17 @@ export function ReturnsTable({
                 refund={r.refund}
                 orderTotal={r.order.totalAmount}
                 currency={r.order.currency}
+                hasNewCustomerEvidence={r.hasNewCustomerEvidence}
               />
               <span className="text-xs text-[var(--shop-text-muted)]">
                 {formatReturnDate(r.createdAt)}
               </span>
+              <Link
+                href={`/orders/returns/${r.id}`}
+                className="justify-self-end text-xs font-semibold text-[var(--shop-accent)] hover:underline"
+              >
+                View
+              </Link>
             </div>
           ))
         )}

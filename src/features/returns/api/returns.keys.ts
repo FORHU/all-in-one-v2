@@ -9,4 +9,5 @@ export const returnsKeys = {
     [...returnsKeys.lists(), tenantSlug, params] as const,
   byOrder: (orderId: string) =>
     [...returnsKeys.all, "by-order", orderId] as const,
+  detail: (id: string) => [...returnsKeys.all, "detail", id] as const,
 };

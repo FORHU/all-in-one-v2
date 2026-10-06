@@ -5,6 +5,10 @@ import {
   ReturnMutationResponseSchema,
   IssueRefundResponseSchema,
   CreateReturnResponseSchema,
+  ReturnDetailResponseSchema,
+  ReturnTransitionResponseSchema,
+  FileCjDisputeResponseSchema,
+  RefreshCjDisputeResponseSchema,
   type ReturnStatus,
 } from "../contracts/returns.contract";
 
@@ -14,7 +18,10 @@ export type GetReturnsParams = {
   search?: string;
   sortBy?: "createdAt" | "updatedAt" | "status";
   sortOrder?: "asc" | "desc";
-  status?: ReturnStatus;
+  // "CUSTOMER_RESPONDED" is a derived pseudo-status (not a real
+  // ReturnStatus) that the backend controller special-cases — see
+  // ReturnsListView.tsx's CUSTOMER_RESPONDED constant.
+  status?: ReturnStatus | "CUSTOMER_RESPONDED";
 };
 
 /** GET /api/v2/returns — admin-only, requires x-tenant-slug (attached by http.ts). */
@@ -73,6 +80,106 @@ export const issueReturnRefund = async (
     body: JSON.stringify({ orderId, ...input }),
   });
   return IssueRefundResponseSchema.parse(raw).data;
+};
+
+/** GET /api/v2/returns/:id/detail — full admin review screen. */
+export const getReturnDetail = async (id: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/returns/${id}/detail`);
+  return ReturnDetailResponseSchema.parse(raw).data;
+};
+
+/** PATCH /api/v2/returns/:id/status/under-review — PENDING -> UNDER_REVIEW. */
+export const startReturnReview = async (id: string) => {
+  const raw = await fetcher<unknown>(
+    `/api/v2/returns/${id}/status/under-review`,
+    {
+      method: "PATCH",
+    },
+  );
+  return ReturnTransitionResponseSchema.parse(raw).data;
+};
+
+/** PATCH /api/v2/returns/:id/status/evidence-required — UNDER_REVIEW -> EVIDENCE_REQUIRED. */
+export const requestReturnEvidence = async (id: string, note: string) => {
+  const raw = await fetcher<unknown>(
+    `/api/v2/returns/${id}/status/evidence-required`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ note }),
+    },
+  );
+  return ReturnTransitionResponseSchema.parse(raw).data;
+};
+
+/** PATCH /api/v2/returns/:id/status/approve — UNDER_REVIEW -> APPROVED (new request lifecycle, not the legacy PENDING-only approveReturn). */
+export const approveReturnRequest = async (id: string, note?: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/returns/${id}/status/approve`, {
+    method: "PATCH",
+    body: JSON.stringify({ note }),
+  });
+  return ReturnTransitionResponseSchema.parse(raw).data;
+};
+
+/** PATCH /api/v2/returns/:id/status/reject — UNDER_REVIEW or EVIDENCE_REQUIRED -> REJECTED (new request lifecycle). */
+export const rejectReturnRequest = async (id: string, reason: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/returns/${id}/status/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+  return ReturnTransitionResponseSchema.parse(raw).data;
+};
+
+/**
+ * POST /api/v2/returns/:id/dispute/file — admin tries to recover
+ * AddictStyle's cost from CJ before ever refunding the customer.
+ */
+export const fileCjDispute = async (id: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/returns/${id}/dispute/file`, {
+    method: "POST",
+  });
+  return FileCjDisputeResponseSchema.parse(raw).data;
+};
+
+/** GET /api/v2/returns/:id/dispute/refresh — on-demand pull of CJ's current ruling, never auto-transitions status. */
+export const refreshCjDispute = async (id: string) => {
+  const raw = await fetcher<unknown>(`/api/v2/returns/${id}/dispute/refresh`);
+  return RefreshCjDisputeResponseSchema.parse(raw).data;
+};
+
+/** POST /api/v2/returns/:id/dispute/confirm-outcome — admin confirms what CJ's raw status actually means. */
+export const confirmCjDisputeOutcome = async (
+  id: string,
+  outcome: "APPROVED" | "REJECTED",
+  note?: string,
+) => {
+  const raw = await fetcher<unknown>(
+    `/api/v2/returns/${id}/dispute/confirm-outcome`,
+    {
+      method: "POST",
+      body: JSON.stringify({ outcome, note }),
+    },
+  );
+  return ReturnTransitionResponseSchema.parse(raw).data;
+};
+
+export type ProcessRefundInput = {
+  amount: number;
+  note?: string;
+  costCoveredBy?: "CJ" | "ADDICTSTYLE" | "CUSTOMER_NOT_REFUNDED" | "SPLIT";
+};
+
+/**
+ * POST /api/v2/returns/:id/process-refund — the actual refund, callable
+ * from APPROVED/CJ_APPROVED/CJ_REJECTED/RETURN_PROCESSING. Distinct from
+ * the legacy issueRefund (POST /:returnId/refund) above, which only ever
+ * worked from plain APPROVED and records no cost-attribution bookkeeping.
+ */
+export const processRefund = async (id: string, input: ProcessRefundInput) => {
+  const raw = await fetcher<unknown>(`/api/v2/returns/${id}/process-refund`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return ReturnTransitionResponseSchema.parse(raw).data;
 };
 
 export type CreateReturnInput = {

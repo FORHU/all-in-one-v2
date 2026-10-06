@@ -7,7 +7,12 @@
 export const featureManifest = {
   name: "returns",
   dependsOn: [] as const,
-  exposes: ["ReturnsListView", "useReturns", "OrderReturnsPanel"] as const,
+  exposes: [
+    "ReturnsListView",
+    "useReturns",
+    "OrderReturnsPanel",
+    "ReturnDetailView",
+  ] as const,
 } as const;
 
 export type ReturnsManifest = typeof featureManifest;

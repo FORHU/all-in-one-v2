@@ -13,8 +13,20 @@ import { Dropdown, type DropdownOption } from "@/shared/components/Dropdown";
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
 
+// Not a real ReturnStatus — a derived pseudo-status (see ReturnService.
+// listReturns) for returns sitting at UNDER_REVIEW because the customer
+// just resubmitted evidence an admin asked for. Sent to the API as
+// `status=CUSTOMER_RESPONDED`, which the controller recognizes and routes
+// to its own query instead of the plain status filter.
+const CUSTOMER_RESPONDED = "CUSTOMER_RESPONDED";
+
 const STATUS_DROPDOWN_OPTIONS: DropdownOption[] = [
   { value: "all", label: "All statuses" },
+  {
+    value: CUSTOMER_RESPONDED,
+    label: "Customer Responded",
+    indicatorColor: "var(--shop-warning)",
+  },
   ...RETURN_STATUS_VALUES.map((s) => ({
     value: s,
     label: formatStatusLabel(s),
@@ -26,7 +38,9 @@ export function ReturnsListView() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | ReturnStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | ReturnStatus | "CUSTOMER_RESPONDED"
+  >("all");
 
   // Debounce free-text search so we don't fire a request per keystroke.
   useEffect(() => {
@@ -74,7 +88,9 @@ export function ReturnsListView() {
         <Dropdown
           value={statusFilter}
           options={STATUS_DROPDOWN_OPTIONS}
-          onChange={(v) => setStatusFilter(v as "all" | ReturnStatus)}
+          onChange={(v) =>
+            setStatusFilter(v as "all" | ReturnStatus | "CUSTOMER_RESPONDED")
+          }
           size="sm"
           className="w-[168px]"
           aria-label="Filter by status"

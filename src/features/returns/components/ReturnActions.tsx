@@ -23,6 +23,8 @@ type ReturnActionsProps = {
   refund: { id: string; amount: string; status: RefundStatus } | null;
   orderTotal: string;
   currency: string;
+  /** Customer resubmitted evidence for an EVIDENCE_REQUIRED request — see ReturnService.listReturns. Swaps the plain "Under Review" badge for a distinct one so the queue doesn't look identical to a request nobody's touched yet. */
+  hasNewCustomerEvidence?: boolean;
   /** Fires after a refund is actually issued — lets the order page refresh its own status (may have flipped to REFUNDED). */
   onRefundIssued?: () => void;
 };
@@ -42,9 +44,15 @@ export function ReturnActions({
   refund,
   orderTotal,
   currency,
+  hasNewCustomerEvidence,
   onRefundIssued,
 }: ReturnActionsProps) {
-  const style = RETURN_STATUS_STYLES[status];
+  const style = hasNewCustomerEvidence
+    ? { bg: "var(--shop-warning-bg)", color: "var(--shop-warning)" }
+    : RETURN_STATUS_STYLES[status];
+  const statusLabel = hasNewCustomerEvidence
+    ? "Customer Responded"
+    : formatStatusLabel(status);
   const approve = useApproveReturn();
   const reject = useRejectReturn();
   const issueRefund = useIssueReturnRefund();
@@ -86,7 +94,7 @@ export function ReturnActions({
         className="h-1.5 w-1.5 rounded-full"
         style={{ background: style.color }}
       />
-      {formatStatusLabel(status)}
+      {statusLabel}
     </span>
   );
 

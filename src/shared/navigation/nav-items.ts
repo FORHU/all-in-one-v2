@@ -72,6 +72,7 @@ export const STORE_NAV_ITEMS: NavItem[] = [
       { label: "All Orders", href: "/orders" },
       { label: "Processing", href: "/orders/processing" },
       { label: "Completed", href: "/orders/completed" },
+      { label: "Cancelled", href: "/orders/cancelled" },
       { label: "Returns", href: "/orders/returns" },
     ],
   },
